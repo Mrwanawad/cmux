@@ -78,6 +78,7 @@ import {
 } from "./markdownHost";
 import { galleryHost, galleryModules } from "./galleryHost";
 import { perfLintOnSave } from "./perfLint";
+import { hotSwapTiming } from "./hotSwapTiming";
 import { devEntrySrc } from "./devEntrySrc";
 import { liveRecoveryScript } from "./liveRecovery";
 import { viteCacheDir } from "./viteCacheDir.mjs";
@@ -106,6 +107,7 @@ export function cmuxDevServer(): Plugin[] {
     galleryHost(),
     { ...galleryModules(), apply: "serve" },
     perfLintOnSave(),
+    hotSwapTiming(),
   ];
 }
 
