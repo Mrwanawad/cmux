@@ -52,6 +52,7 @@ parser.add_argument("--cold", type=int, default=5, help="fresh launches in the c
 parser.add_argument("--starts", default="terminal,page")
 parser.add_argument("--arms", default="now,late,cold")
 parser.add_argument("--text", default="hello world 123")
+parser.add_argument("--key", default="n", choices=["n", "t"], help="the command key: n (Cmd-N) or t (Cmd-T, a New Tab page in the pane)")
 parser.add_argument("--rate", type=float, default=30.0)
 parser.add_argument("--delay-ms", type=float, default=40.0)
 parser.add_argument("--late-ms", type=float, default=1500.0)
@@ -71,8 +72,8 @@ COMMAND, SHIFT = 55, 56
 
 def sequence(delay_ms):
     """Cmd-N, then the text: one `debug.key` sequence, each step's gap from the step before it."""
-    steps = [{"key_code": COMMAND, "down": True}, {"key_code": CODES["n"], "down": True, "after_ms": 8},
-             {"key_code": CODES["n"], "down": False, "after_ms": 40}, {"key_code": COMMAND, "down": False, "after_ms": 10}]
+    steps = [{"key_code": COMMAND, "down": True}, {"key_code": CODES[opts.key], "down": True, "after_ms": 8},
+             {"key_code": CODES[opts.key], "down": False, "after_ms": 40}, {"key_code": COMMAND, "down": False, "after_ms": 10}]
     gap = 1000.0 / opts.rate
     first = max(0.0, delay_ms - 58)  # from the command key's up, 58 ms after the N went down
     for index, character in enumerate(opts.text):
