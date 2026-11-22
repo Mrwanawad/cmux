@@ -55,7 +55,7 @@ export async function runSandbox(
   task: string,
   agent: string | undefined,
   key: string,
-  connection: string | undefined,
+  connection?: string,
 ): Promise<SandboxRun> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
