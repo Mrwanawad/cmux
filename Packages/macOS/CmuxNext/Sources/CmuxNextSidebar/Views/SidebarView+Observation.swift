@@ -170,8 +170,9 @@ extension SidebarViewComponents {
         renderNow()
         list.revealSelectionNow()
     }
-    func render(_ state: RenderState) {
-        guard state != lastState else { return }
+    func render(_ drawn: RenderState) {
+        guard drawn != lastState else { return }
+        var state = drawn
         let chromeChanged = lastState?.metrics != state.metrics || lastState?.fontSize != state.fontSize
             || lastState?.titlebarHeight != state.titlebarHeight || lastState?.leadingColumn != state.leadingColumn
             || lastState?.pinnedRowLeading != state.pinnedRowLeading
@@ -190,6 +191,16 @@ extension SidebarViewComponents {
             || lastState?.collapsedSections != state.collapsedSections || lastState?.look != state.look
             || lastState?.drawsLines != state.drawsLines || lastState?.preferences != state.preferences || lastState?.suppressedApps != state.suppressedApps
         let selectionChanged = lastState?.selection != state.selection || lastState?.selected != state.selected
+        model.applyListPreferences(state.preferences)
+        model.groupByStatus(state.groupsByStatus)
+        // Resolve the selected row's ancestors in its newly drawn lists. A drag or regrouping can
+        // change those ancestors without changing either the selection or the daemon's parent map.
+        // Before the rows are compared: a fold the reveal opens is part of this render's rows, so a create or a
+        // close under a folded parent is one change of the list. Read after the compare, it was a second render
+        // one turn later, which laid the list out again under the rows the first one had just moved.
+        selectionTreeReveal.update(selection: state.selection, model: model, tree: .shared,
+                                   force: Self.revealsSelection(selectionChanged: selectionChanged, from: lastState?.tree, to: state.tree))
+        state.tree = SidebarSessionTree.shared.drawn
         let rowsChanged = lastState?.sectionsRevision != state.sectionsRevision || lastState?.filter != state.filter || chromeChanged || profileChanged
             || state.preferences.changesList(from: lastState?.preferences) || lastState?.tree != state.tree
             || lastState?.history != state.history
@@ -200,12 +211,6 @@ extension SidebarViewComponents {
             || lastState?.groupLineJoinsBar != state.groupLineJoinsBar || lastState?.noColorBlocks != state.noColorBlocks
         let listChanged = rowsChanged || selectionChanged
         let previous = lastState == nil ? nil : lastSections
-        model.applyListPreferences(state.preferences)
-        model.groupByStatus(state.groupsByStatus)
-        // Resolve the selected row's ancestors in its newly drawn lists. A drag or regrouping can
-        // change those ancestors without changing either the selection or the daemon's parent map.
-        selectionTreeReveal.update(selection: state.selection, model: model, tree: .shared,
-                                   force: Self.revealsSelection(selectionChanged: selectionChanged, from: lastState?.tree, to: state.tree))
         // Minimal mode or an item's control changed: show or hide the chosen bands now.
         // Minimal Mode or controls on hover too (``SidebarSectionsPreferences/hidesControlsUntilHover``): its
         // controls fade to the new rule.
