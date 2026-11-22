@@ -861,6 +861,19 @@ async fn data_request(State(state): State<AppState>, request: Request<Body>) -> 
     out.body(Body::from_stream(answer.bytes_stream()))
         .unwrap_or_else(|_| Response::new(Body::empty()))
 }
+/// Whether a request came from a web page: an `Origin`, or the fetch metadata a browser
+/// attaches to every request (`sec-fetch-site`, `-dest`, `-user`). Node's built-in fetch
+/// (undici) sends a lone `sec-fetch-mode: cors` on every call and nothing else, so that one
+/// header alone is a CLI on this machine (pi, or any Node OpenAI/Anthropic SDK client), not a
+/// page: refusing it 403'd every pi turn on the cmux route (fork-hammer, 2026-11-22).
+fn from_a_browser(headers: &HeaderMap) -> bool {
+    headers.contains_key("origin")
+        || headers.keys().any(|name| {
+            let name = name.as_str();
+            name.starts_with("sec-fetch-") && name != "sec-fetch-mode"
+        })
+}
+
 async fn authorize(
     method: Method,
     path: &str,
@@ -873,10 +886,7 @@ async fn authorize(
     if header_bytes > HEADER_LIMIT {
         return Err(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE);
     }
-    if method == Method::OPTIONS || headers.contains_key("origin") {
-        return Err(StatusCode::FORBIDDEN);
-    }
-    if headers.keys().any(|name| name.as_str().starts_with("sec-fetch-")) {
+    if method == Method::OPTIONS || from_a_browser(&headers) {
         return Err(StatusCode::FORBIDDEN);
     }
     let hosts =
@@ -915,6 +925,28 @@ async fn authorize(
 #[cfg(test)]
 mod relay_error_tests {
     use super::*;
+
+    #[test]
+    fn node_fetch_is_not_a_browser_but_a_page_is() {
+        let with = |pairs: &[(&'static str, &'static str)]| {
+            let mut headers = HeaderMap::new();
+            for (name, value) in pairs {
+                headers.insert(*name, value.parse().unwrap());
+            }
+            headers
+        };
+        // Node's undici fetch (pi 1.6.0 through the OpenAI SDK): only sec-fetch-mode.
+        assert!(!from_a_browser(&with(&[("sec-fetch-mode", "cors"), ("accept-language", "*")])));
+        assert!(!from_a_browser(&with(&[("user-agent", "curl/8")])));
+        // A page's fetch, form or navigation.
+        assert!(from_a_browser(&with(&[("origin", "https://evil.example")])));
+        assert!(from_a_browser(&with(&[
+            ("sec-fetch-mode", "cors"),
+            ("sec-fetch-site", "cross-site")
+        ])));
+        assert!(from_a_browser(&with(&[("sec-fetch-dest", "empty")])));
+        assert!(from_a_browser(&with(&[("sec-fetch-user", "?1")])));
+    }
 
     #[test]
     fn relay_refusals_that_retrying_cannot_fix_say_so() {
