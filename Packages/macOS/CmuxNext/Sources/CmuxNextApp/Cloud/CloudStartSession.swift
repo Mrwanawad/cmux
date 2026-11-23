@@ -41,13 +41,7 @@ struct CloudStartSession {
         var cwd: String?
         /// A folder on this Mac (`--from-folder`) the session starts in a copy of, never with ``cwd``; and `--model`, the agent's model there (nil: its harness default).
         var fromFolder: String?, model: String? // nil unless given: a struct's optional var defaults to nil in its memberwise init (lint forbids `= nil`)
-        /// The local Cloud model connection selected for this launch, independent of the account scope.
-        var connection: String?
-
-        init(machineID: String?, name: String?, agent: String, cwd: String?, fromFolder: String? = nil, model: String? = nil, connection: String? = nil) {
-            (self.machineID, self.name, self.agent, self.cwd, self.fromFolder, self.model, self.connection) =
-                (machineID, name, agent, cwd, fromFolder, model, connection)
-        }
+        var connection: String? // the local Cloud model connection selected for this launch, independent of the account scope
 
         /// The command that asks for this again, every word as the shell reads it back.
         var command: String {
@@ -55,8 +49,7 @@ struct CloudStartSession {
             if let machineID { words.append("--target machine:" + CloudStartCore.shellQuoted(machineID)) } else { words.append("--name " + CloudStartCore.shellQuoted(name ?? "")) }
             words.append("--agent " + agent + (model.map { " --model " + CloudStartCore.shellQuoted($0) } ?? ""))
             if let cwd { words.append("--cwd " + CloudStartCore.shellQuoted(cwd)) }
-            if let fromFolder { words.append("--from-folder " + CloudStartCore.shellQuoted(fromFolder)) }
-            if let connection { words.append("--connection " + CloudStartCore.shellQuoted(connection)) }
+            if let fromFolder { words.append("--from-folder " + CloudStartCore.shellQuoted(fromFolder)) }; if let connection { words.append("--connection " + CloudStartCore.shellQuoted(connection)) }
             return words.joined(separator: " ")
         }
 
@@ -212,8 +205,7 @@ struct CloudStartSession {
         }
         let machineID = invocation.target.flatMap { $0.kind == .machine ? $0.id : nil }
         let name = invocation["name"]?.stringValue?.trimmingCharacters(in: .whitespaces)
-        let connection = invocation["connection"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }
-        if let connection, !CloudSetup.isConnectionID(connection) { throw ActionFailure(message: "connection_invalid") }
+        let connection = invocation["connection"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }; if let connection, !CloudSetup.isConnectionID(connection) { throw ActionFailure(message: "connection_invalid") }
         return Request(machineID: machineID, name: name?.isEmpty == false ? name : nil, agent: agent, cwd: cwd, fromFolder: try Self.fromFolder(invocation, cwd: cwd), model: invocation["model"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }, connection: connection) // the machine checks the model
     }
 
@@ -294,8 +286,7 @@ struct CloudStartSession {
             let listed = await CloudWait.holds(within: .seconds(60)) { [services] in services.locateTab(tabKey, onMachine: id) != nil }
             try Self.check(account, now: services.cloud.account, request.asked(machine: name))
             guard listed else { throw AccountChanged(failure: ActionFailure(message: CloudStartSessionStrings.notConnected(name, id: id, agent: agent))) }
-            steps.done("tab")
-            services.cloud.agentCredentials.use(connection: request.connection, chat: tabKey, machine: id)
+            steps.done("tab"); services.cloud.agentCredentials.use(connection: request.connection, chat: tabKey, machine: id)
             switch tabs.host(for: tabs.tabKey(tabKey, machine: id)) {
             case let remote as AgentTabRemoteHost:
                 // Each restart and start try is for the account that asked, checked right before it.
