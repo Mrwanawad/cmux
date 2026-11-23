@@ -170,7 +170,21 @@ await requireBrowserLane("composer-bottom-controls.browser.test.ts", async () =>
           },
           { scroller, SCROLLING_ATTRIBUTE },
         );
-      await page.waitForTimeout(REST_MS);
+      // The thumb fades on its own: wait for it to be gone (bounded), never a fixed sleep.
+      const rested = () =>
+        page.waitForFunction(
+          ({ scroller, SCROLLING_ATTRIBUTE }) => {
+            const element = document.querySelector<HTMLElement>(scroller);
+            return (
+              !!element &&
+              !element.hasAttribute(SCROLLING_ATTRIBUTE) &&
+              getComputedStyle(element).getPropertyValue("--cmux-shown-scroller-ink").trim() === "0%"
+            );
+          },
+          { scroller, SCROLLING_ATTRIBUTE },
+          { timeout: REST_MS },
+        );
+      await rested();
       const rest = await state();
       expect(rest.overflows).toBe(true);
       expect(rest).toMatchObject({ marked: false, ink: "0%" });
@@ -183,7 +197,7 @@ await requireBrowserLane("composer-bottom-controls.browser.test.ts", async () =>
         { scroller, SCROLLING_ATTRIBUTE },
         { timeout: 1_000 },
       );
-      await page.waitForTimeout(REST_MS);
+      await rested();
       expect((await state()).marked).toBe(false);
 
       // A wheel scroll over the draft shows it.
@@ -196,7 +210,7 @@ await requireBrowserLane("composer-bottom-controls.browser.test.ts", async () =>
         { timeout: 1_000 },
       );
       await page.mouse.move(0, 0);
-      await page.waitForTimeout(REST_MS);
+      await rested();
       expect((await state()).marked).toBe(false);
     } finally {
       await page.close();
