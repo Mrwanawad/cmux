@@ -249,7 +249,12 @@ export type PaneBodyDeps = NewTabShown &
     cloudRetryFolder: React.RefObject<{ cwd: string } | { home: true } | undefined>;
     sendToCloud: SendToCloud;
     sandboxing: boolean;
-    startSandbox: (text: string, attachmentCount: number, harness: string | undefined, connection?: string) => string | boolean;
+    startSandbox: (
+      text: string,
+      attachmentCount: number,
+      harness: string | undefined,
+      connection?: string,
+    ) => string | boolean;
     sandboxNotNow: "sandbox_spent" | "unavailable_now";
     newTabSandboxSent: React.RefObject<boolean>;
     heldBack: React.RefObject<{ text: string; attachments: ComposerAttachment[] }[] | undefined>;

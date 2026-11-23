@@ -275,7 +275,12 @@ export type PaneComposerDeps = {
   shellRuns: ShellRuns;
   sandbox: SandboxTab;
   sandboxNotNow: "sandbox_spent" | "unavailable_now";
-  startSandbox: (text: string, attachmentCount: number, harness: string | undefined, connection?: string) => string | boolean;
+  startSandbox: (
+    text: string,
+    attachmentCount: number,
+    harness: string | undefined,
+    connection?: string,
+  ) => string | boolean;
   setCloudWaking: React.Dispatch<React.SetStateAction<boolean>>;
   trustHeld: ReturnType<typeof useTrustHeldPrompts>;
   trustHeldCwd: string | undefined;
