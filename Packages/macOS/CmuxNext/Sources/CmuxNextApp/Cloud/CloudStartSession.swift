@@ -40,8 +40,7 @@ struct CloudStartSession {
         /// A folder on the machine; nil starts in the workspace's folder there.
         var cwd: String?
         /// A folder on this Mac (`--from-folder`) the session starts in a copy of, never with ``cwd``; and `--model`, the agent's model there (nil: its harness default).
-        var fromFolder: String?, model: String? // nil unless given: a struct's optional var defaults to nil in its memberwise init (lint forbids `= nil`)
-        var connection: String? // the local Cloud model connection selected for this launch, independent of the account scope
+        var fromFolder: String?, model: String?, connection: String? // `connection`: the local Cloud model connection selected for this launch, independent of the account scope; nil unless given: a struct's optional var defaults to nil in its memberwise init (lint forbids `= nil`)
 
         /// The command that asks for this again, every word as the shell reads it back.
         var command: String {
@@ -204,8 +203,7 @@ struct CloudStartSession {
             throw ActionFailure(message: CloudStartSessionStrings.cwdInvalid)
         }
         let machineID = invocation.target.flatMap { $0.kind == .machine ? $0.id : nil }
-        let name = invocation["name"]?.stringValue?.trimmingCharacters(in: .whitespaces)
-        let connection = invocation["connection"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }; if let connection, !CloudSetup.isConnectionID(connection) { throw ActionFailure(message: "connection_invalid") }
+        let name = invocation["name"]?.stringValue?.trimmingCharacters(in: .whitespaces); let connection = invocation["connection"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }; if let connection, !CloudSetup.isConnectionID(connection) { throw ActionFailure(message: "connection_invalid") }
         return Request(machineID: machineID, name: name?.isEmpty == false ? name : nil, agent: agent, cwd: cwd, fromFolder: try Self.fromFolder(invocation, cwd: cwd), model: invocation["model"]?.stringValue.map { $0.trimmingCharacters(in: .whitespaces) }.flatMap { $0.isEmpty ? nil : $0 }, connection: connection) // the machine checks the model
     }
 
