@@ -2269,6 +2269,7 @@ pub(super) fn send(
         from_folder: None,
         environment: None,
         account: None,
+        connection: None,
         machine: Machine::Target(machine_id.to_owned()),
         wait: false,
         timeout: DEFAULT_TIMEOUT,
