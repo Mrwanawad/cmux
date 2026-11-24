@@ -314,6 +314,13 @@ pub(super) fn claim(id: &str) {
     let _ = MAKING.try_with(|making| making.made.set(id.to_owned()));
 }
 
+/// The live sessions `live` plus the admitted creates whose session is not one of
+/// them: a create is counted once, as its session once that runs.
+fn counted(live: &std::collections::HashSet<&str>, open: &[Arc<Making>]) -> usize {
+    live.len()
+        + open.iter().filter(|m| m.made.get().is_none_or(|id| !live.contains(id.as_str()))).count()
+}
+
 impl Drop for Admitted<'_> {
     fn drop(&mut self) {
         let mut open = self.admitting.0.lock().unwrap_or_else(|e| e.into_inner());
