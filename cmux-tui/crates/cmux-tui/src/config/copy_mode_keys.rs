@@ -14,6 +14,11 @@ pub enum CopyModeAction {
     WordNext,
     WordPrev,
     WordEnd,
+    /// Start a character selection if none is open, then move one word left
+    /// (editor-style Ctrl+Shift+Left). Also enters copy mode from a PTY pane.
+    SelectWordPrev,
+    /// Start a character selection if none is open, then move one word right.
+    SelectWordNext,
     BigWordNext,
     BigWordPrev,
     BigWordEnd,
@@ -62,7 +67,7 @@ const fn binding(
 
 /// The copy-mode catalog in documentation order. Default chords use the
 /// `keys` chord grammar; `ctrl+b` is left out because it is the default prefix.
-static COPY_MODE_BINDINGS: [CopyModeBinding; 36] = [
+static COPY_MODE_BINDINGS: [CopyModeBinding; 38] = [
     binding(CopyModeAction::CursorLeft, "cursor-left", &["h", "left"]),
     binding(CopyModeAction::CursorRight, "cursor-right", &["l", "right"]),
     binding(CopyModeAction::CursorUp, "cursor-up", &["k", "up"]),
@@ -70,6 +75,8 @@ static COPY_MODE_BINDINGS: [CopyModeBinding; 36] = [
     binding(CopyModeAction::WordNext, "word-next", &["w"]),
     binding(CopyModeAction::WordPrev, "word-prev", &["b"]),
     binding(CopyModeAction::WordEnd, "word-end", &["e"]),
+    binding(CopyModeAction::SelectWordPrev, "select-word-prev", &["ctrl+shift+left"]),
+    binding(CopyModeAction::SelectWordNext, "select-word-next", &["ctrl+shift+right"]),
     binding(CopyModeAction::BigWordNext, "bigword-next", &["W"]),
     binding(CopyModeAction::BigWordPrev, "bigword-prev", &["B"]),
     binding(CopyModeAction::BigWordEnd, "bigword-end", &["E"]),

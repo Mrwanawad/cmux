@@ -243,6 +243,25 @@ impl CopyModeState {
             A::WordNext => self.set_point(motion::word_next(grid, self.cursor, false)),
             A::WordPrev => self.set_point(motion::word_prev(grid, self.cursor, false)),
             A::WordEnd => self.set_point(motion::word_end(grid, self.cursor, false)),
+            A::SelectWordPrev => {
+                if self.visual.is_none() {
+                    // The terminal cursor sits after the last typed letter, as an
+                    // editor caret does: anchor on that letter, not the blank cell.
+                    let caret = CopyPoint {
+                        row: self.cursor.row,
+                        col: grid.prev_col(self.cursor).unwrap_or(self.cursor.col),
+                    };
+                    self.visual = Some(VisualMode::Char);
+                    self.anchor = Some(caret);
+                }
+                self.set_point(motion::word_prev(grid, self.cursor, false));
+            }
+            A::SelectWordNext => {
+                if self.visual.is_none() {
+                    self.toggle_visual(VisualMode::Char);
+                }
+                self.set_point(motion::word_end(grid, self.cursor, false));
+            }
             A::BigWordNext => self.set_point(motion::word_next(grid, self.cursor, true)),
             A::BigWordPrev => self.set_point(motion::word_prev(grid, self.cursor, true)),
             A::BigWordEnd => self.set_point(motion::word_end(grid, self.cursor, true)),

@@ -18720,6 +18720,29 @@ impl App {
         {
             return KeyboardIngress::Handled(action);
         }
+        // Editor-style word selection (Ctrl+Shift+Left/Right by default)
+        // enters copy mode on the focused terminal and selects the first word.
+        if self.focus == FocusTarget::Pane
+            && let Some(action) = self
+                .config
+                .keys
+                .copy_mode
+                .action_for(&binding_key)
+                .or_else(|| {
+                    binding_fallback.as_ref().and_then(|key| self.config.keys.copy_mode.action_for(key))
+                })
+            && matches!(
+                action,
+                crate::config::CopyModeAction::SelectWordPrev
+                    | crate::config::CopyModeAction::SelectWordNext
+            )
+        {
+            self.enter_copy_mode(false);
+            if self.copy_mode_active() {
+                self.run_copy_action(action);
+                return KeyboardIngress::Handled(RenderAction::Draw);
+            }
+        }
         KeyboardIngress::Routed(TerminalInput::Keyboard(input))
     }
 
