@@ -71,6 +71,18 @@ impl Fixture {
 }
 
 #[test]
+fn ctrl_shift_left_selects_word_by_word_from_the_caret() {
+    // The caret sits after the last letter, as when typing a prompt.
+    let mut f = Fixture::new(40, 5, "> fix the auth bug");
+    f.run(A::SelectWordPrev);
+    assert_eq!(f.yank(), "bug");
+
+    let mut f = Fixture::new(40, 5, "> fix the auth bug");
+    f.runs(&[A::SelectWordPrev, A::SelectWordPrev, A::SelectWordPrev]);
+    assert_eq!(f.yank(), "the auth bug");
+}
+
+#[test]
 fn copy_mode_starts_at_the_terminal_cursor() {
     let fixture = Fixture::new(40, 5, "one\r\ntwo three");
     assert_eq!(fixture.at(), (1, 9));
