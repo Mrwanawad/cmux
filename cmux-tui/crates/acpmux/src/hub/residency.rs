@@ -116,9 +116,10 @@ pub(super) fn adaptive_period(
 }
 
 /// A filler chat (started on idle capacity, leo-workspace `tools/idle_feeder.py`): evictable, so
-/// no cap counts it. False until its start carries the marker (lane/idle-feeder-sources).
-pub(super) fn is_filler(_session: &Session) -> bool {
-    false
+/// no cap counts it. Its start carries the acpmux tag `filler=true`
+/// (`admission_redirect::is_filler`).
+pub(super) fn is_filler(session: &Session) -> bool {
+    super::admission_redirect::is_filler(session)
 }
 
 /// A harness runs for the chat: its status says one is up, it holds one, or its agent host runs.
@@ -130,6 +131,12 @@ fn resident(session: &Session, status: SessionStatus, hosted: bool) -> bool {
             SessionStatus::Ready | SessionStatus::Running | SessionStatus::Waiting
         ) || hosted
             || session.child.try_lock().map(|c| c.is_some()).unwrap_or(true))
+}
+
+/// Whether a harness runs for the chat now (`resident`): the fillers whose room a real start
+/// takes are picked from these (`admission.rs`).
+pub(super) fn resident_now(session: &Session, hosted: bool) -> bool {
+    resident(session, session.status(), hosted)
 }
 
 /// What a lane cap counts: a chat not closed whose harness is resident and that is no filler.
