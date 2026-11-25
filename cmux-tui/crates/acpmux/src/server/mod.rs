@@ -107,7 +107,6 @@ mod goal;
 mod harness_admin;
 mod harness_enable;
 mod held_rows;
-pub(crate) mod host_notice;
 pub(crate) mod host_power;
 mod http_refusal;
 mod in_flight;
@@ -154,6 +153,7 @@ pub mod mesh_relay;
 pub(super) mod mesh_send;
 #[cfg(test)]
 mod message_notice_tests;
+mod methods;
 #[cfg(test)]
 #[path = "mirror_relay_tests.rs"]
 mod mirror_relay_tests;
@@ -261,7 +261,6 @@ mod update_cost_bench;
 pub mod upload_frames;
 mod vault;
 mod view;
-mod vm_host;
 pub(crate) mod wait;
 #[cfg(test)]
 #[cfg(unix)]
@@ -2170,6 +2169,7 @@ pub use chat_windows::live_tasks as live_chat_window_tasks;
 pub(crate) use chats::usage_upload_loop;
 pub use conn_auth::ConnAuth;
 use lane_parent::lane_parent;
+pub(crate) use methods::host_notice;
 pub(crate) use outbound::is_cheap_read;
 pub use pairing::serve_connection_device;
 pub(crate) use peer_forward::strip_asks as strip_peer_asks;
