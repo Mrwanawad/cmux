@@ -411,7 +411,10 @@ public struct CloudGitHubPicker {
         auth.gitHubChanges.forgetRefusal() // a new Connect starts over: the last refused link no longer applies
         guard let owner = await owner(), let path = CloudGitHubApp.path(team: owner.team),
               let status = await owner.client.person(path) else { return .unavailable(.unreachable) }
-        if let known = Self.connectFromStatus(status: status.status, body: status.body, repo: repo) { return known }
+        if let known = Self.connectFromStatus(status: status.status, body: status.body, repo: repo) {
+            if case .open = known { auth.gitHubChanges.noteOpened() } // a settings page: its save brings nothing back
+            return known
+        }
         let client = owner.client
         if auth.gitHubChanges.count != connects.seenChanges { connects.forgetPages(); connects.seenChanges = auth.gitHubChanges.count }
         if let repo {
@@ -419,7 +422,9 @@ public struct CloudGitHubPicker {
             switch await connects.answer(team: owner.team, repo: repo, now: Date(), ask: { key in
                 await client.gitHubConnect(key: key, returnTo: returnTo, repo: repo)
             }) {
-            case .page(let page): return .open(page)
+            case .page(let page):
+                auth.gitHubChanges.noteOpened()
+                return .open(page)
             case .connected: return .connected
             case .refused, .noAnswer: return .failed
             }
@@ -435,6 +440,7 @@ public struct CloudGitHubPicker {
             guard case .refused = answer else { return answer }
             return await client.gitHubConnect(key: key + ":plain")
         }) else { return .failed }
+        auth.gitHubChanges.noteOpened()
         return .open(page)
     }
 }

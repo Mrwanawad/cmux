@@ -397,9 +397,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 settings?.managedPreferencesMayHaveChanged()
                 services?.windows.enterRestoredFullScreens()
                 await services?.paidPlanReturned() // an upgrade's payment page sends the person back here
+                services?.cloud.auth.gitHubChanges.returned() // back from GitHub after a connect: read it again (#55104)
                 await services?.joinConsent.refresh() // a consent refusal acpmux recorded meanwhile; reads nothing with Labs off
                 if let services { CloudStartChat.warmSpare(services) } // intent, never awaited: the next activation runs at once
             }
+        }
+        // GitHub's completion link, reached in one of cmux's own browser tabs, finishes here (#55104).
+        BrowserAppLinks.handle = { [auth = services.cloud.auth] url in
+            let answer = CloudGitHubCompletion.inAppBrowser(url, auth: auth)
+            return answer.finished ? .finished : answer.seen ? .seen : .ignored
         }
         services.configActions.start(settings: settings)
         services.projectActions.start()

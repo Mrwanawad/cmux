@@ -27,11 +27,39 @@ import Observation
         case .refused: refusal = Refusal(reason: reason)
         case .connected, .noAnswer: refusal = nil
         }
+        openedAt = nil
         count += 1
     }
 
     /// A new Connect GitHub starts over: the last refusal no longer applies.
     public func forgetRefusal() { refusal = nil }
+
+    /// When this launch last opened a GitHub install or settings page for a connect; nil when none is pending.
+    public private(set) var openedAt: Date?
+    /// How long after opening GitHub a return to cmux still reads GitHub again.
+    static let returnWindow: TimeInterval = 30 * 60
+
+    /// A connect opened GitHub (``openedAt``): the person's return to cmux reads GitHub again (``returned(now:)``).
+    public func noteOpened(now: Date = Date()) { openedAt = now }
+
+    /// GitHub saved a change that brought nothing back to finish (its settings page's `setup_action=update` has no
+    /// state): every observer reads GitHub again, as after a completion (#55104).
+    public func refresh() {
+        refusal = nil
+        openedAt = nil
+        count += 1
+    }
+
+    /// cmux became active again: when a connect opened GitHub within ``returnWindow``, read GitHub again (a redirect
+    /// that never reached the app, or a settings save with nothing to finish). True when it refreshed.
+    @discardableResult public func returned(now: Date = Date()) -> Bool {
+        guard let openedAt, now.timeIntervalSince(openedAt) <= Self.returnWindow, now >= openedAt else {
+            self.openedAt = nil
+            return false
+        }
+        refresh()
+        return true
+    }
 }
 
 /// GitHub's install redirect handed back to this app (#46018): the connect this app started named
@@ -120,6 +148,31 @@ extension CloudGitHubCompletion {
             auth.gitHubChanges.record(answer, reason: reason)
         }
         return true
+    }
+}
+
+extension CloudGitHubCompletion {
+    /// What the app does with a URL one of its own browser tabs reached (#55104), for `BrowserAppLinks`:
+    /// - this build's completion link: finished here (``handle(_:auth:)``), `finished` true;
+    /// - the console's page for a GitHub settings save with no state (`setup_action=update`): GitHub is read again,
+    ///   and the page loads as usual, `finished` false, `seen` true;
+    /// - anything else: neither.
+    @MainActor public static func inAppBrowser(_ url: URL, auth: CloudAuth) -> (finished: Bool, seen: Bool) {
+        if handle(url, auth: auth) { return (true, true) }
+        guard isSavedOnGitHub(url) else { return (false, false) }
+        auth.gitHubChanges.refresh()
+        return (false, true)
+    }
+
+    /// The console's callback for a GitHub settings save that no connect started: `installation_id`,
+    /// `setup_action=update`, no `state` (dashboard `integrationSavedOnGitHub`), on cmux's own console.
+    nonisolated static func isSavedOnGitHub(_ url: URL) -> Bool {
+        guard url.scheme == "https", let host = url.host?.lowercased(), host == "cmux.dev" || host.hasSuffix(".cmux.dev"),
+              url.path == "/integrations/callback",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return false }
+        func value(_ name: String) -> String? { items.first(where: { $0.name == name })?.value.flatMap { $0.isEmpty ? nil : $0 } }
+        return value("state") == nil && value("error") == nil && value("setup_action") == "update"
+            && value("installation_id").map { !$0.isEmpty && $0.count <= 20 && $0.allSatisfy(\.isNumber) } == true
     }
 }
 

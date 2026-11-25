@@ -37,6 +37,17 @@ extension WebKitTab: WKNavigationDelegate {
             }
         }
 
+        // This build's own GitHub completion link (BrowserAppLinks, #55104): finished here, never the external-app prompt.
+        if navigationAction.targetFrame?.isMainFrame ?? true {
+            switch BrowserAppLinks.answer(url) {
+            case .finished:
+                decisionHandler(.cancel, preferences)
+                let visited = webView.backForwardList.backList.map(\.url) + [webView.url].compactMap { $0 }
+                if BrowserAppLinks.onlyConnectPages(visited) { emit(.close) }
+                return
+            case .seen, .ignored: break
+            }
+        }
         if !Self.isWebScheme(url) {
             decisionHandler(.cancel, preferences)
             // The shared opener prompts for every non-gesture navigation,
