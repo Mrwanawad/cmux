@@ -71,76 +71,82 @@ export function VaultCard({ reveal = false }: { reveal?: boolean }) {
     <section className="group" data-card="vault" data-vault-phase={phase} id="vault" ref={card}>
       <h3 className="group-title">{t("settingsPage.vault.title")}</h3>
       <p className="row-help">{t("settingsPage.vault.lead")}</p>
-      {phase === "off" && (
-        <div className="row" data-vault-off="">
-          <span className="row-help">{t("settingsPage.vault.offHelp")}</span>
-          <span className="row-control">
-            <Button
-              type="button"
-              variant="solid"
-              className="button"
-              data-vault-action="on"
-              disabled={busy}
-              onClick={() => void turnOn()}
-            >
-              {t("settingsPage.vault.turnOn")}
-            </Button>
-          </span>
-        </div>
-      )}
-      {phase === "loading" && (
-        <div className="row" data-vault-loading="">
-          <span className="row-help">{t("settingsPage.vault.loading")}</span>
-        </div>
-      )}
-      {(phase === "signedOut" || phase === "error") && (
-        <div className="row" data-vault-unavailable="">
-          <span className="row-help">
-            {phase === "signedOut"
-              ? t("settingsPage.vault.signedOut")
-              : (read?.error ?? t("settingsPage.vault.failed"))}
-          </span>
-          <span className="row-control">
-            <Button
-              type="button"
-              className="button"
-              data-vault-action="retry"
-              disabled={busy}
-              onClick={() => void refresh()}
-            >
-              {t("settingsPage.vault.retry")}
-            </Button>
-          </span>
-        </div>
-      )}
-      {phase === "joining" && (
-        <div className="row" data-vault-joining="">
-          <span className="row-help">
-            {status?.state === "not_enrolled" ? t("settingsPage.vault.joinOthers") : t("settingsPage.vault.joining")}
-          </span>
-          <span className="row-control">
-            <Button
-              type="button"
-              variant="solid"
-              className="button"
-              data-vault-action="join"
-              disabled={busy}
-              onClick={() => void run({ action: "on" })}
-            >
-              {t("settingsPage.vault.addThisMac")}
-            </Button>
-          </span>
-        </div>
-      )}
-      {phase === "pending" && (
-        <div className="row vault-pending" data-vault-pending="">
-          <span className="row-help">{t("settingsPage.vault.pendingHelp")}</span>
-          <code className="vault-code" data-vault-code="" aria-label={t("settingsPage.vault.codeLabel")}>
-            {codeText(status?.safetyCode)}
-          </code>
-          <span className="row-help">
-            <code className="keys-code">cmux vault approve {status?.safetyCode ?? ""}</code>
-          </span>
+      {phase !== "on" && (
+        <div className="rows" data-vault-state="">
+          {phase === "off" && (
+            <div className="row" data-vault-off="">
+              <span className="row-help">{t("settingsPage.vault.offHelp")}</span>
+              <span className="row-control">
+                <Button
+                  type="button"
+                  variant="solid"
+                  className="button"
+                  data-vault-action="on"
+                  disabled={busy}
+                  onClick={() => void turnOn()}
+                >
+                  {t("settingsPage.vault.turnOn")}
+                </Button>
+              </span>
+            </div>
+          )}
+          {phase === "loading" && (
+            <div className="row" data-vault-loading="">
+              <span className="row-help">{t("settingsPage.vault.loading")}</span>
+            </div>
+          )}
+          {(phase === "signedOut" || phase === "error") && (
+            <div className="row" data-vault-unavailable="">
+              <span className="row-help">
+                {phase === "signedOut"
+                  ? t("settingsPage.vault.signedOut")
+                  : (read?.error ?? t("settingsPage.vault.failed"))}
+              </span>
+              <span className="row-control">
+                <Button
+                  type="button"
+                  className="button"
+                  data-vault-action="retry"
+                  disabled={busy}
+                  onClick={() => void refresh()}
+                >
+                  {t("settingsPage.vault.retry")}
+                </Button>
+              </span>
+            </div>
+          )}
+          {phase === "joining" && (
+            <div className="row" data-vault-joining="">
+              <span className="row-help">
+                {status?.state === "not_enrolled"
+                  ? t("settingsPage.vault.joinOthers")
+                  : t("settingsPage.vault.joining")}
+              </span>
+              <span className="row-control">
+                <Button
+                  type="button"
+                  variant="solid"
+                  className="button"
+                  data-vault-action="join"
+                  disabled={busy}
+                  onClick={() => void run({ action: "on" })}
+                >
+                  {t("settingsPage.vault.addThisMac")}
+                </Button>
+              </span>
+            </div>
+          )}
+          {phase === "pending" && (
+            <div className="row vault-pending" data-vault-pending="">
+              <span className="row-help">{t("settingsPage.vault.pendingHelp")}</span>
+              <code className="vault-code" data-vault-code="" aria-label={t("settingsPage.vault.codeLabel")}>
+                {codeText(status?.safetyCode)}
+              </code>
+              <span className="row-help">
+                <code className="keys-code">cmux vault approve {status?.safetyCode ?? ""}</code>
+              </span>
+            </div>
+          )}
         </div>
       )}
       {phase === "on" && status && (
