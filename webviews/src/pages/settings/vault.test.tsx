@@ -17,6 +17,9 @@ const { VAULT_SETTING, codeText, deviceRows, itemRows, scopeWire, scopeChoice, v
   await import("./vault");
 const { mockVaultOn, mockVaultPending } = await import("./mockVault");
 
+type VaultStatus = ReturnType<typeof mockVaultOn>;
+const ok = (status: VaultStatus) => ({ status, error: null, code: null });
+
 let page: Rendered | null = null;
 afterEach(() => {
   page?.unmount();
@@ -39,11 +42,11 @@ test("phase, code and row order come from the CLI's answer", () => {
   expect(vaultPhase(true, null)).toBe("loading");
   expect(vaultPhase(true, { status: null, error: "x", code: "cmux.vault.not_signed_in" })).toBe("signedOut");
   expect(vaultPhase(true, { status: null, error: "x", code: "cmux.vault.failed" })).toBe("error");
-  expect(vaultPhase(true, { status: mockVaultPending() })).toBe("pending");
-  expect(vaultPhase(true, { status: { ...mockVaultOn(), state: "not_enrolled" } })).toBe("joining");
-  expect(vaultPhase(true, { status: mockVaultOn() })).toBe("on");
+  expect(vaultPhase(true, ok(mockVaultPending()))).toBe("pending");
+  expect(vaultPhase(true, ok({ ...mockVaultOn(), state: "not_enrolled" }))).toBe("joining");
+  expect(vaultPhase(true, ok(mockVaultOn()))).toBe("on");
   expect(codeText("77314092")).toBe("7731 4092");
-  const read = { status: mockVaultOn() };
+  const read = ok(mockVaultOn());
   expect(deviceRows(read).map((d) => d.id)).toEqual(["dv_iphone", "dv_thismac", "dv_studio"]);
   expect(itemRows(read).map((i) => `${i.name} ${i.scope}`)).toEqual([
     "DATABASE_URL repo:example/web",
