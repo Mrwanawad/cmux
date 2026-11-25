@@ -38,7 +38,7 @@ package final class SettingsVault: PageProvider {
         self.init(cli: { await binary().map { VaultCLI(binary: $0) } }, pickFile: { await SettingsVault.openPanel() })
     }
 
-    package func call(_ op: String, params: JSONValue, context: PageCallContext) async throws -> JSONValue {
+    package func call(_ op: String, params: CmuxNextSettings.JSONValue, context: PageCallContext) async throws -> CmuxNextSettings.JSONValue {
         let verb = String(op.dropFirst(Self.prefix.count))
         guard op.hasPrefix(Self.prefix), Self.verbs.contains(verb) else { throw PageError.unknownOp(op) }
         guard verb == "state" || (context.page == PageDescriptor.settings.id && context.userGesture) else {
@@ -57,7 +57,7 @@ package final class SettingsVault: PageProvider {
             case "import_preview":
                 return try await preview(token: params["token"]?.stringValue ?? "", scope: Self.scope(params), cli)
             default: // import_keep
-                let names = (params["names"]?.arrayValue ?? []).compactMap(\.stringValue)
+                let names = (params["names"]?.arrayValue ?? []).compactMap { $0.stringValue }
                 guard let url = file(params["token"]?.stringValue), !names.isEmpty,
                       names.allSatisfy(Self.plainName) else { throw PageError.invalidParams("token and names are required") }
                 return try await cli.call(["vault", "import", url.path, "--only", names.joined(separator: ","),
@@ -69,14 +69,15 @@ package final class SettingsVault: PageProvider {
         }
     }
 
-    private func run(_ params: JSONValue, _ cli: VaultCLI) async throws -> JSONValue {
+    private func run(_ params: CmuxNextSettings.JSONValue, _ cli: VaultCLI) async throws -> CmuxNextSettings.JSONValue {
         let text = { (key: String) -> String in params[key]?.stringValue ?? "" }
         switch text("action") {
         case "on": return try await cli.call(["vault", "on"])
         case "sync": return try await cli.call(["vault", "sync"])
         case "approve":
-            guard text("code").filter(\.isNumber).count == 8 else { throw PageError.invalidParams("code takes 8 digits") }
-            return try await cli.call(["vault", "approve", text("code").filter(\.isNumber)])
+            let digits = text("code").filter { $0.isNumber }
+            guard digits.count == 8 else { throw PageError.invalidParams("code takes 8 digits") }
+            return try await cli.call(["vault", "approve", digits])
         case "remove_device":
             guard Self.plainID(text("id")) else { throw PageError.invalidParams("id is required") }
             return try await cli.call(["vault", "remove-device", text("id")])
@@ -92,9 +93,9 @@ package final class SettingsVault: PageProvider {
         }
     }
 
-    private func preview(token: String, scope: String, _ cli: VaultCLI) async throws -> JSONValue {
+    private func preview(token: String, scope: String, _ cli: VaultCLI) async throws -> CmuxNextSettings.JSONValue {
         guard let url = file(token) else { throw PageError(code: "cmux.vault.import_gone", message: Self.pickAgain) }
-        var answer = try await cli.call(["vault", "import", url.path, "--scope", scope]).objectValue ?? [:]
+        var answer: [String: CmuxNextSettings.JSONValue] = try await cli.call(["vault", "import", url.path, "--scope", scope]).objectValue ?? [:]
         answer["token"] = .string(token)
         answer["file"] = .string(url.lastPathComponent)
         return .object(answer)
@@ -105,7 +106,7 @@ package final class SettingsVault: PageProvider {
     }
 
     /// The scope the page sent, as the CLI's `--scope` takes it (the CLI checks its shape).
-    private static func scope(_ params: JSONValue) -> String {
+    private static func scope(_ params: CmuxNextSettings.JSONValue) -> String {
         let scope = params["scope"]?.stringValue ?? "*"
         return scope.isEmpty || scope.hasPrefix("-") ? "*" : scope
     }
