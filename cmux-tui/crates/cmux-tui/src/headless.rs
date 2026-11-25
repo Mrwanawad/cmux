@@ -34,6 +34,9 @@ where
     cmux_tui_core::server::start_apps_when_ready(mux);
     // Send Later: what came due while the daemon was down goes now.
     cmux_tui_core::server::start_scheduled_sender(mux);
+    // The cmux vault: seal to the person's Cloud machines while cloud.vault.enabled is on (vault_sync.rs).
+    #[cfg(target_os = "macos")]
+    let vault_sync = crate::vault_sync::VaultSync::start(&mux.session);
     // The brains of the Chiefs that are not the default, when the app asked
     // for them (CMUX_TUI_CHIEF_BRAINS); they end with this owner.
     let chief_brains = cmux_tui_core::chief_brains::start(mux, socket_path);
@@ -115,6 +118,10 @@ where
     }
     if let Some(chief_brains) = chief_brains {
         chief_brains.stop();
+    }
+    #[cfg(target_os = "macos")]
+    if let Some(vault_sync) = vault_sync {
+        vault_sync.stop();
     }
     #[cfg(unix)]
     if let Some(orphan_exit) = orphan_exit {

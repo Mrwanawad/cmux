@@ -15,6 +15,7 @@ import { mockAllotments, runMockAllotment } from "./mockAllotments";
 import { createMockPair } from "../../protocol/adapters/mock";
 import { updatable } from "./harnesses";
 import { MockTeams } from "./mockTeams";
+import { MockVault } from "./mockVault";
 import { ACCOUNT_ACTIONS } from "../shared/signIn/accountSignIn";
 import { MockAccountSignIn } from "../shared/signIn/mockSignIn";
 import { mockContextMenus, setMockMenuLayout } from "./mockMenus";
@@ -41,6 +42,7 @@ import {
   type CloudEnvironmentsState,
   type SharesState,
   type KeysState,
+  type VaultRun,
   type TailnetState,
   type DevicesRun,
   type DevicesRunResult,
@@ -739,6 +741,17 @@ export class MockSettingsProvider {
       "cmux.settings.customize.checklist": (params) => ({
         checklist: mockChecklist(this.values, (params as { has?: ChecklistFact[] }).has ?? []),
       }),
+      "cmux.settings.vault.state": () => this.vault.state(),
+      "cmux.settings.vault.run": (params) => this.vault.run(params as unknown as VaultRun),
+      "cmux.settings.vault.import_pick": (params) =>
+        this.vault.preview(String((params as { scope?: unknown }).scope ?? "*")),
+      "cmux.settings.vault.import_preview": (params) =>
+        this.vault.preview(
+          String((params as { scope?: unknown }).scope ?? "*"),
+          String((params as { token?: unknown }).token ?? ""),
+        ),
+      "cmux.settings.vault.import_keep": (params) =>
+        this.vault.keep(params as unknown as { token: string; names: string[]; scope: string }),
       "cmux.settings.keys.list": () => this.keys,
       "cmux.settings.keys.answer": (params) => this.answerKey(params as { request_id?: unknown; value?: unknown }),
       "cmux.settings.keys.decline": (params) =>
@@ -1137,6 +1150,11 @@ export class MockSettingsProvider {
       "cmux.settings.shares.revoke",
       "cmux.settings.archived.list",
       "cmux.settings.archived.run",
+      "cmux.settings.vault.state",
+      "cmux.settings.vault.run",
+      "cmux.settings.vault.import_pick",
+      "cmux.settings.vault.import_preview",
+      "cmux.settings.vault.import_keep",
       "cmux.settings.keys.list",
       "cmux.settings.keys.answer",
       "cmux.settings.keys.decline",
@@ -1310,6 +1328,9 @@ export class MockSettingsProvider {
     this.library = next;
     return { library: next };
   }
+
+  /** Settings > Cloud > Vault as the app answers it (mockVault.ts). */
+  vault = new MockVault();
 
   /** Settings > Keys as the app answers it: one request waiting and three keys (live, expired,
    * revoked). */

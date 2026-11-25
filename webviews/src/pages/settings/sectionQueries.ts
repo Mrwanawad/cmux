@@ -15,9 +15,11 @@ import type {
   LibraryListing,
   Checklist,
   ArchivedState,
+  VaultRead,
 } from "./ops";
 import { checklistFacts } from "./customizeProgress";
 import { settingsKeys } from "./queries";
+import { VAULT_SETTING } from "./vault";
 import { loadCards } from "./components/cardModules";
 import type { SettingsStore } from "./store";
 
@@ -172,6 +174,20 @@ export function keysQuery(store: SettingsStore) {
   });
 }
 
+/** The Vault card's key; every gesture refreshes it. */
+export const VAULT_KEY = [...settingsKeys.all, "vault"] as const;
+
+/** Settings > Cloud > Vault: the vault as this Mac sees it. Read only while cloud.vault.enabled is
+ * on: an opt-in that is off sends nothing to the Cloud. */
+export function vaultQuery(store: SettingsStore) {
+  return queryOptions<VaultRead>({
+    queryKey: VAULT_KEY,
+    queryFn: () => store.vault(),
+    staleTime: SECTION_READ_FRESH_MS,
+    structuralSharing: true,
+  });
+}
+
 /** The section a route shows: where the link resolves (settingsLinks.ts): the focused key's home,
  * else the path's category, card, row or connection. */
 export function routeSection(section: string | undefined, focus: string | undefined | null): string {
@@ -209,6 +225,8 @@ export function sectionReads(store: SettingsStore, section: string): SectionRead
   // Customization Problems draws above the library, in its slot.
   if (cards.has("customizeLibrary")) reads.push({ options: doctorQuery(store), revalidate: true });
   if (cards.has("keys")) reads.push({ options: keysQuery(store), revalidate: true });
+  if (cards.has("vault") && store.getSnapshot().rows.get(VAULT_SETTING)?.value === true)
+    reads.push({ options: vaultQuery(store), revalidate: true });
   if (cards.has("tailnet")) reads.push({ options: tailnetQuery(store), revalidate: true });
   if (cards.has("channels")) {
     const ring = store.getSnapshot().rows.get("updates.channel")?.value;

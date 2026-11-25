@@ -1123,6 +1123,63 @@ export type CloudEnvironmentsRun =
   | { action: "build"; id: string }
   | { action: "delete"; id: string };
 
+/** Settings > Cloud > Vault (cmuxterm-hq docs/design/e2e-vault.md): `cmux vault status --json`
+ * (cmux-tui cli/vault.rs) as the app relays it. No field is ever a value. */
+export type VaultDeviceWire = {
+  id: string;
+  /** `mac`, `iphone`, `cli`, `linux`. */
+  kind: string;
+  label: string;
+  /** `active` or `pending` (waits for an approve on an active device). */
+  state: string;
+  /** The 8 digits the person compares on both devices before Approve. */
+  safetyCode: string;
+  thisDevice: boolean;
+};
+export type VaultItemWire = {
+  id: string;
+  name: string;
+  /** `*`, `repo:OWNER/NAME` or `machine:vm_…`. */
+  scope: string;
+  scopeLabel: string;
+  revision: number;
+  updatedAt: number;
+  masked: string;
+};
+export type VaultStatusWire = {
+  vault: string;
+  /** `off` (no device yet), `pending`, `active` or `not_enrolled` (the vault has other devices). */
+  state: string;
+  epoch: number;
+  deviceId: string | null;
+  safetyCode: string | null;
+  devices: VaultDeviceWire[];
+  items: VaultItemWire[];
+};
+/** The card's read: the status, or why there is none (`code` is the host's error code). */
+export type VaultRead = { status: VaultStatusWire | null; error: string | null; code: string | null };
+/** One vault gesture. `set`'s value goes to `cmux vault set` on stdin and nowhere else. */
+export type VaultRun =
+  | { action: "on" }
+  | { action: "sync" }
+  | { action: "approve"; code: string }
+  | { action: "remove_device"; id: string }
+  | { action: "set"; name: string; scope: string; value: string; replace_scope?: string }
+  | { action: "remove"; name: string; scope: string };
+/** One name of a picked `.env`: whether the vault keeps such a name, and whether it already keeps
+ * it in the chosen scope. Never its value. */
+export type VaultPreviewRow = { name: string; line: number; keepable: boolean; alreadyKept: boolean; masked: string };
+/** `import_pick` and `import_preview`: the file's names; `token` names the picked file to the app
+ * (the page never holds its path). `cancelled`: the person closed the panel. */
+export type VaultPreview = {
+  cancelled?: boolean;
+  token?: string;
+  file?: string;
+  preview?: VaultPreviewRow[];
+  skippedLines?: number[];
+};
+export type VaultKept = { kept?: string[]; scope?: string; machines?: number };
+
 /** Settings > Server > This Mac on Your Tailnet: acpmux's embedded tailnet node as `_acpmux/tailnet/*`
  * answers it (cmux-tui acpmux tailnet/embedded.rs `Snapshot::to_json`), relayed unchanged by the app on
  * its person connection. */
@@ -2458,6 +2515,16 @@ export type SettingsOps = {
   "cmux.settings.tailnet.login": [Record<string, never>, TailnetState | null];
   /** Native, the person's click: signs the node out and closes its listeners. */
   "cmux.settings.tailnet.logout": [Record<string, never>, TailnetState | null];
+  /** Native: Settings > Cloud > Vault, the bundled `cmux vault status --json`. */
+  "cmux.settings.vault.state": [Record<string, never>, VaultStatusWire];
+  /** Native, the person's click: one vault gesture through the bundled `cmux vault` (a value on stdin only). */
+  "cmux.settings.vault.run": [VaultRun, unknown];
+  /** Native, the person's click: the native panel picks a `.env`; its names, never a value. */
+  "cmux.settings.vault.import_pick": [{ scope: string }, VaultPreview];
+  /** Native: the picked file's names again, for another scope. */
+  "cmux.settings.vault.import_preview": [{ token: string; scope: string }, VaultPreview];
+  /** Native, the person's click: keeps the ticked names of the picked file (`cmux vault import --only`). */
+  "cmux.settings.vault.import_keep": [{ token: string; names: string[]; scope: string }, VaultKept];
   /** Native: joins one Cloud machine using a key supplied only for this gesture via stdin. */
   "cmux.settings.tailnet.joinVM": [
     {

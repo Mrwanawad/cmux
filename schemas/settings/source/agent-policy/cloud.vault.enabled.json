@@ -1,0 +1,4 @@
+{
+  "agent": "userOnly",
+  "why": "Turning the cmux vault on enrolls this Mac as a device that can open the person's secrets and seal them to their Cloud machines: only the person opts in."
+}

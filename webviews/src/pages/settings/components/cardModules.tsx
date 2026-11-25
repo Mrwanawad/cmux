@@ -86,6 +86,8 @@ const LOADERS: Record<CategoryCard, () => Promise<CardRender>> = {
     import("./ServerCard").then(({ ServerCard }) => () => <ServerCard />),
   cloudEnvironments: () =>
     import("./CloudEnvironmentsCard").then(({ CloudEnvironmentsCard }) => () => <CloudEnvironmentsCard />),
+  vault: () =>
+    import("./VaultCard").then(({ VaultCard }) => (_focus, _workspace, reveal) => <VaultCard reveal={reveal} />),
   cloudModels: () =>
     import("./CloudModelsCard").then(({ CloudModelsCard }) => (focus) => <CloudModelsCard focus={focus} />),
   sharedLinks: () =>

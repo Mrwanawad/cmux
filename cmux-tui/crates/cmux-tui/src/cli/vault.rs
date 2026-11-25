@@ -27,10 +27,11 @@ use super::{OutputMode, UsageError};
 
 pub(crate) const USAGE: &str = "usage: cmux vault status | on | devices | approve CODE | remove-device ID | rotate
        cmux vault ls
-       cmux vault set NAME [--repo OWNER/NAME | --machine vm_...]   (the value from a hidden prompt or stdin)
-       cmux vault rm NAME [--repo OWNER/NAME | --machine vm_...]
-       cmux vault import FILE [--only A,B | --all] [--repo OWNER/NAME | --machine vm_...]
-       cmux vault sync
+       cmux vault set NAME [--repo OWNER/NAME | --machine vm_... | --scope S] [--replace-scope S]   (the value from a hidden prompt or stdin)
+       cmux vault rm NAME [--repo OWNER/NAME | --machine vm_... | --scope S]
+       cmux vault import FILE [--only A,B | --all] [--repo OWNER/NAME | --machine vm_... | --scope S]
+       cmux vault sync [--soon]
+  a scope S is `*` (every machine), `repo:OWNER/NAME` or `machine:vm_...`; --replace-scope moves NAME from that scope.
   each takes --team team_... (the team vault), --api URL, --cloud-token-file PATH (or CMUX_CLOUD_ACCESS_TOKEN) and --json.
   End to end encrypted: your devices hold the key; Cloud machines get only their values, sealed to them.";
 
@@ -44,10 +45,26 @@ pub(super) enum Verb {
     RemoveDevice(String),
     Rotate,
     Ls,
-    Set { name: String, scope: Scope },
-    Rm { name: String, scope: Option<Scope> },
-    Import { file: PathBuf, only: Option<Vec<String>>, all: bool, scope: Scope },
-    Sync,
+    /// `replace`: the scope NAME moves from (an edit that changed where it goes), removed once the new one is kept.
+    Set {
+        name: String,
+        scope: Scope,
+        replace: Option<Scope>,
+    },
+    Rm {
+        name: String,
+        scope: Option<Scope>,
+    },
+    Import {
+        file: PathBuf,
+        only: Option<Vec<String>>,
+        all: bool,
+        scope: Scope,
+    },
+    /// `soon`: ask this Mac's daemon to sync now (it watches the wake file) instead of syncing here.
+    Sync {
+        soon: bool,
+    },
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -62,6 +79,7 @@ pub(super) fn parse(rest: &[String]) -> Result<(Verb, Opts), UsageError> {
     let mut opts = Opts::default();
     let mut positional: Vec<String> = Vec::new();
     let (mut repo, mut machine, mut only, mut all) = (None, None, None, false);
+    let (mut scope_text, mut replace_text, mut soon) = (None, None, false);
     let mut words = rest.iter();
     while let Some(word) = words.next() {
         let Some(flag) = word.strip_prefix("--") else {
@@ -94,6 +112,9 @@ pub(super) fn parse(rest: &[String]) -> Result<(Verb, Opts), UsageError> {
                 )
             }
             "all" => all = true,
+            "scope" => scope_text = Some(value()?),
+            "replace-scope" => replace_text = Some(value()?),
+            "soon" => soon = true,
             "json" => {}
             "help" => return Ok((Verb::Help, opts)),
             _ => return Err(UsageError::new(format!("unknown flag --{flag}\n{USAGE}"))),
@@ -104,17 +125,31 @@ pub(super) fn parse(rest: &[String]) -> Result<(Verb, Opts), UsageError> {
     {
         return Err(UsageError::new("--team takes a team id (team_...)"));
     }
-    let scope = match (repo, machine) {
-        (Some(_), Some(_)) => return Err(UsageError::new("pick one of --repo and --machine")),
-        (Some(repo), None) => Some(
+    let wire = |text: &str| {
+        let text = if text == "all" { "*" } else { text };
+        Scope::parse(text)
+            .ok_or_else(|| UsageError::new("a scope is `*`, `repo:OWNER/NAME` or `machine:vm_...`"))
+    };
+    let replace = replace_text.as_deref().map(wire).transpose()?;
+    let scope = match (repo, machine, scope_text) {
+        (repo, machine, Some(text)) => {
+            if repo.is_some() || machine.is_some() {
+                return Err(UsageError::new("pick one of --repo, --machine and --scope"));
+            }
+            Some(wire(&text)?)
+        }
+        (Some(_), Some(_), None) => {
+            return Err(UsageError::new("pick one of --repo and --machine"));
+        }
+        (Some(repo), None, None) => Some(
             Scope::parse(&format!("repo:{repo}"))
                 .ok_or_else(|| UsageError::new("--repo takes OWNER/NAME"))?,
         ),
-        (None, Some(vm)) => Some(
+        (None, Some(vm), None) => Some(
             Scope::parse(&format!("machine:{vm}"))
                 .ok_or_else(|| UsageError::new("--machine takes a machine id (vm_...)"))?,
         ),
-        (None, None) => None,
+        (None, None, None) => None,
     };
     let Some((verb, args)) = positional.split_first() else { return Ok((Verb::Help, opts)) };
     let one = |args: &[String]| match args {
@@ -135,7 +170,8 @@ pub(super) fn parse(rest: &[String]) -> Result<(Verb, Opts), UsageError> {
             if !cmux_vault_e2e::valid_name(&name) {
                 return Err(UsageError::new(format!("{name} is not a name the vault keeps")));
             }
-            Verb::Set { name, scope: scope.clone().unwrap_or(Scope::All) }
+            let scope = scope.clone().unwrap_or(Scope::All);
+            Verb::Set { name, replace: replace.clone().filter(|old| old != &scope), scope }
         }
         ("rm" | "remove", args) => Verb::Rm { name: one(args)?, scope: scope.clone() },
         ("import", args) => {
@@ -149,7 +185,7 @@ pub(super) fn parse(rest: &[String]) -> Result<(Verb, Opts), UsageError> {
                 scope: scope.clone().unwrap_or(Scope::All),
             }
         }
-        ("sync", []) => Verb::Sync,
+        ("sync", []) => Verb::Sync { soon },
         _ => return Err(usage()),
     };
     if matches!(verb, Verb::Approve(ref code) if code.chars().filter(char::is_ascii_digit).count() != 8)
@@ -423,6 +459,45 @@ impl DeviceStore for OsDeviceStore {
     }
 }
 
+/// The file this Mac's daemon watches to sync the vault at once (`cmux vault sync --soon`, a machine just made):
+/// beside this build's device key, so a DEV build's daemon wakes only for its own.
+pub(crate) fn wake_file() -> Option<PathBuf> {
+    Some(super::cloud_secret::index_path()?.parent()?.join("vault-device").join("sync.wake"))
+}
+
+/// Touches [`wake_file`].
+fn wake_daemon() -> Result<(), String> {
+    let path = wake_file().ok_or_else(|| "no HOME for the vault's wake file".to_owned())?;
+    let dir = path.parent().ok_or_else(|| "no folder for the vault's wake file".to_owned())?;
+    std::fs::create_dir_all(dir).map_err(|_| "the vault's folder could not be made".to_owned())?;
+    std::fs::write(&path, system_time_text())
+        .map_err(|_| "the wake file could not be written".to_owned())
+}
+
+fn system_time_text() -> String {
+    cmux_vault_e2e::client::system_now_ms().to_string()
+}
+
+/// What this Mac's daemon asks of the personal vault in the background (`vault_sync.rs`): no prompt, no value.
+#[cfg_attr(not(unix), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Background {
+    Status,
+    Enroll,
+    Sync,
+}
+
+/// One [`Background`] verb as the signed-in app's person, on this device's key; the JSON answer `--json` prints.
+#[cfg_attr(not(unix), allow(dead_code))]
+pub(crate) fn background(verb: Background) -> Result<Value, cmux_vault_e2e::client::Failure> {
+    let verb = match verb {
+        Background::Status => Verb::Status,
+        Background::Enroll => Verb::On,
+        Background::Sync => Verb::Sync { soon: false },
+    };
+    perform(verb, &Opts::default(), true).map(|(value, _)| value)
+}
+
 fn host_label() -> String {
     let mut buf = [0_u8; 256];
     // SAFETY: gethostname writes at most `buf.len()` bytes into `buf`, which outlives the call.
@@ -467,6 +542,13 @@ pub(super) fn perform(
     json: bool,
 ) -> Result<(Value, String), cmux_vault_e2e::client::Failure> {
     use cmux_vault_e2e::client::Failure;
+    if verb == (Verb::Sync { soon: true }) {
+        wake_daemon().map_err(|m| Failure::new("vault.wake", m))?;
+        return Ok((
+            json!({"asked": true}),
+            "Asked this Mac's cmux to sync the vault now.".to_owned(),
+        ));
+    }
     let (origin, bearer, team_header) = auth(opts)?;
     let header = opts.team.clone().or(team_header);
     let http = Transport::new(origin.clone(), bearer, header)
@@ -553,10 +635,19 @@ pub(super) fn perform(
             let epoch = vault.rotate()?;
             print(json!({"epoch": epoch}), format!("Rotated the vault key (epoch {epoch})."));
         }
-        Verb::Set { name, scope } => {
+        Verb::Set { name, scope, replace } => {
             let value = acpmux::cli::harness_secret::read_value(&name)
                 .map_err(|_| Failure::new("vault.no_value", "no value was read"))?;
             let revision = vault.set(&name, &scope, value.trim_end_matches(['\n', '\r']))?;
+            drop(value);
+            // An edit that moved NAME: the old scope goes only once the new one is kept.
+            if let Some(old) = &replace {
+                match vault.remove(&name, Some(old)) {
+                    Ok(_) => {}
+                    Err(failure) if failure.code == "vault.no_entry" => {}
+                    Err(failure) => return Err(failure),
+                }
+            }
             let synced = vault.sync().map(|rows| rows.len()).unwrap_or(0);
             print(
                 json!({"name": name, "scope": scope.wire(), "revision": revision, "machines": synced}),
@@ -630,7 +721,8 @@ pub(super) fn perform(
                 ),
             );
         }
-        Verb::Sync => {
+        // `sync --soon` was answered above, before sign-in; here it is the sync itself.
+        Verb::Sync { .. } => {
             let rows = vault.sync()?;
             let mut text = format!("{} machine(s):", rows.len());
             for r in &rows {
@@ -718,9 +810,34 @@ mod tests {
             parse(&words("set OPENAI_API_KEY --repo Manaflow-AI/cmux")).unwrap().0,
             Verb::Set {
                 name: "OPENAI_API_KEY".into(),
-                scope: Scope::Repo("manaflow-ai/cmux".into())
+                scope: Scope::Repo("manaflow-ai/cmux".into()),
+                replace: None,
             }
         );
+        assert_eq!(
+            parse(&words("set A --scope repo:o/n --replace-scope *")).unwrap().0,
+            Verb::Set {
+                name: "A".into(),
+                scope: Scope::Repo("o/n".into()),
+                replace: Some(Scope::All)
+            }
+        );
+        assert_eq!(
+            parse(&words("set A --scope all --replace-scope *")).unwrap().0,
+            Verb::Set { name: "A".into(), scope: Scope::All, replace: None },
+            "a scope that did not change replaces nothing"
+        );
+        assert!(parse(&words("set A --scope repo:o/n --repo o/n")).is_err());
+        assert!(parse(&words("set A --scope nowhere")).is_err());
+        assert_eq!(
+            parse(&words("rm A --scope machine:vm_abcdefghij0123456789")).unwrap().0,
+            Verb::Rm {
+                name: "A".into(),
+                scope: Some(Scope::Machine("vm_abcdefghij0123456789".into()))
+            }
+        );
+        assert_eq!(parse(&words("sync --soon")).unwrap().0, Verb::Sync { soon: true });
+        assert_eq!(parse(&words("sync")).unwrap().0, Verb::Sync { soon: false });
         assert!(parse(&words("set PATH")).is_err());
         assert!(parse(&words("set A --repo a/b --machine vm_abcdefghij0123456789")).is_err());
         assert_eq!(

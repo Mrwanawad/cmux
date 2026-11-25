@@ -134,6 +134,10 @@ mod notification_banners;
 mod vault;
 pub(crate) use completion::refuse_in_help_reader;
 #[cfg(unix)]
+pub(crate) use vault::{
+    Background as VaultBackground, background as vault_background, wake_file as vault_wake_file,
+};
+#[cfg(unix)]
 mod autocloud;
 #[cfg(unix)]
 mod community;

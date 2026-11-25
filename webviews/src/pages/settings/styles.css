@@ -1029,6 +1029,59 @@ mark {
   max-width: var(--page-size-320);
 }
 
+/* Settings > Cloud > Vault: the safety code large enough to compare digit by digit, the masked
+   value, and the import's one checkbox per name. Ghostty-derived tokens only. */
+.vault-subtitle {
+  margin: var(--ds-space-3) 0 var(--ds-space-1);
+  font-size: var(--text-detail);
+  font-weight: 600;
+  color: var(--text-secondary, var(--text));
+}
+
+.vault-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+}
+
+.vault-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(var(--text-detail) * 1.6);
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.vault-masked {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.05em;
+}
+
+.vault-scope-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.vault-import-names {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-import-check {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ds-space-2);
+}
+
+.vault-import-names > li:not([data-keepable]) {
+  opacity: 0.55;
+}
+
 .keys-control {
   display: inline-flex;
   align-items: center;

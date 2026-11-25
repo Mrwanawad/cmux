@@ -117,6 +117,8 @@ export async function mountSettingsPage(state: SettingsPageVariant, context: Sta
     (await import("../../pages/settings/customizeDoctor")).setDoctorTreatment(state.doctorTreatment);
   if (state.keys) mock.provider.keys = structuredClone(state.keys);
   if (state.keys) mock.provider.keys = structuredClone(state.keys);
+  if (state.vault !== undefined) mock.provider.vault.status = structuredClone(state.vault);
+  if (state.vaultPicked !== undefined) mock.provider.vault.picked = structuredClone(state.vaultPicked);
   if (state.hub) mock.provider.hub = structuredClone(state.hub);
   if (state.autocloud) mock.provider.autocloud = structuredClone(state.autocloud);
   if (state.connections) mock.provider.connections = structuredClone(state.connections);

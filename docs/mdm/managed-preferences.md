@@ -119,6 +119,7 @@ Files: `com.manaflow.cmux.plist` (ProfileManifests: iMazing Profile Editor, Prof
 | `cloud.turnCheckpoints` | boolean | `false` |  | Save a Checkpoint Before Each Cloud Chat Turn. Back to Before This Turn restores the machine in seconds. Keeps the newest few. |
 | `cloud.autoCloud` | boolean | `false` |  | Auto Places Chats in Cloud. Auto runs a new chat on this Mac when it has room, else on a Cloud machine. |
 | `cloud.agentMemory.follow` | boolean | `true` |  | Carry Your Agent Memory to Cloud Machines. Your CLAUDE.md, AGENTS.md, agents, commands, skills and Claude's memory notes follow you to Cloud machines. Never credentials or settings files. Agents' changes wait for you in Session Info; only you can change this. Off deletes your copy in the cloud and stops every push. |
+| `cloud.vault.enabled` | boolean | `false` |  | Sync Secrets with the cmux Vault. Your secrets and env values, sealed to your devices and Cloud machines; the server can't read them. On adds this Mac; off stops syncing here and deletes nothing. |
 | `agents.subsessions.enabled` | boolean | `true` |  | Let Agents Start Sub-sessions. Agents can start sessions that work in parallel, shown under theirs. |
 | `agents.subsessions.answerQuestions` | boolean | `false` |  | Let Sessions Answer Their Sub-sessions' Questions. When an agent in a sub-session asks a question, the session that started it can answer, and the answer shows who gave it. Permission requests always wait for you. Off: only you answer. |
 | `agents.subsessions.maxChildren` | real | `1000` | 1 to 1000 | Open Sub-sessions per Session. Finished and closed sub-sessions don't count. |
@@ -495,7 +496,7 @@ Files: `com.manaflow.cmux.plist` (ProfileManifests: iMazing Profile Editor, Prof
 | `sidebar.showSpaces` | boolean | `false` |  | Show Spaces. Spaces show once you have more than one. New Space is in the command palette. |
 | `sidebar.showProfileControl` | boolean | `true` |  | Show Profile Button |
 | `sidebar.showSearchButton` | boolean | `false` |  | Show Search Button. A search button after the profile button. Off: search from the palette. |
-| `sidebar.showLiveToggle` | boolean | `true` |  | Show Live Button. A Live button after the profile button turns presence on or off. Off: use the palette. |
+| `sidebar.showLiveToggle` | boolean | `false` |  | Show Live Button. A Live button after the profile button turns presence on or off. Off: use the palette. |
 | `presence.live` | boolean | `false` |  | Live Presence. Show teammates and agents who are live, and let them see you. Off: you appear offline. |
 | `sidebar.showNewWorkspaceChooser` | boolean | `false` |  | Show New Workspace Menu Button. A chevron beside the + opens the New Workspace menu. Off: right-click the +. |
 | `sidebar.workspacesAsTabs` | boolean | `false` |  | Workspaces as Tabs. Each workspace is one line, and Cmd-Shift-[ and ] switch workspaces. |
@@ -513,6 +514,7 @@ Files: `com.manaflow.cmux.plist` (ProfileManifests: iMazing Profile Editor, Prof
 | `sidebar.detailedStatusIcons` | boolean | `false` |  | Detailed Status Icons. Icons for working, waiting, error and done. Off: a spinner and a dot. |
 | `sidebar.showTimestamps` | boolean | `false` |  | Show Timestamps. Rows show when they last changed, such as 3d. |
 | `sidebar.settleFinished` | boolean | `false` |  | Settle Finished Chats. A chat whose answer you have read folds into Settled at the end of its list until its next turn. |
+| `sidebar.showAgentSessions` | boolean | `false` |  | Show Sessions Started by Agents. Sessions an agent starts list under the session that started them. Off, they stay in the parent chat's list; one that needs you still shows. |
 | `sidebar.showAutomaticSessions` | boolean | `false` |  | Show Automatic Sessions. Sessions that scripts and tools start show in place. Off, they wait in Automatic at the end of their list. |
 | `sidebar.showColors` | boolean | `true` |  | Show Workspace Colors |
 | `workspaceColors.indicatorStyle` | string | `"leftRail"` | `dot`, `leftRail`, `fill` | Workspace Color Style. How a workspace's color shows in the sidebar. |
@@ -813,8 +815,9 @@ Files: `com.manaflow.cmux.plist` (ProfileManifests: iMazing Profile Editor, Prof
 | `experiments.toastsV2` | boolean | `false` |  | Toasts v2. Spinner toasts that turn into their result in place, and an Undo after closing a tab or workspace or archiving a chat. |
 | `experiments.themedPrompts` | boolean | `false` |  | Themed Floating Prompts. Prompts over other apps, such as a teammate asking to control this Mac, use your theme's glass and colors. |
 | `experiments.toastGlass` | boolean | `false` |  | Toast Glass. Toasts in chats sit on the same glass as the app's own toasts. |
-| `experiments.terminalHistoryFind` | boolean | `false` |  | Terminal History Find. Cmd-F in a terminal searches its whole history, with case, whole-word and regex options. |
+| `experiments.terminalHistoryFind` | boolean | `true` |  | Terminal History Find. Cmd-F in a terminal searches its whole history, with case, whole-word and regex options. |
 | `experiments.chatWidgets` | boolean | `false` |  | Extension Chat Widgets. Installed extensions can show a card under a finished tool call in agent chat. |
+| `experiments.introWalk` | boolean | `false` |  | Intro Walk. Make cmux Yours becomes four short screens: a whole look, how you work, trust and notifications, then density and background. |
 | `experiments.threadMinimapRestReveal` | boolean | `false` |  | Prompt Rail Waits for a Resting Pointer. In narrow chats the prompt rail opens only when the pointer rests on the edge, never while you select text. |
 | `experiments.terminalHistory` | boolean | `false` |  | Terminal Agent History. Claude Code and Codex terminals get a button that opens their earlier history as a read-only chat. |
 | `experiments.attachmentTypeIcons` | boolean | `false` |  | Attachment Type Icons. While an attachment loads, its chip shows a file or image icon instead of the loading mark. |

@@ -45,6 +45,8 @@ import type {
   KeysState,
   SharesState,
   TailnetState,
+  VaultPreview,
+  VaultStatusWire,
   ModelsState,
   LibraryListing,
   HubState,
@@ -83,6 +85,10 @@ export type SettingsPageVariant = VariantBase & {
   doctorTreatment?: DoctorTreatment;
   /** Settings > Keys fixture state (requests and keys); default the mock's. */
   keys?: KeysState;
+  /** Settings > Cloud > Vault fixture state (null: the host refuses as signed out); default on. */
+  vault?: VaultStatusWire | null;
+  /** The `.env` the Vault's Import panel picks (null: the person cancels); default the mock's. */
+  vaultPicked?: VaultPreview | null;
   /** Settings > Integrations fixture state; default the mock's (a waiting Stripe refund). */
   hub?: HubState;
   /** Settings > Automations fixture state; default the mock's (three automations, one failed run). */

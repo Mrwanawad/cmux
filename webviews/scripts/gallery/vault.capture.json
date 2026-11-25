@@ -1,0 +1,80 @@
+{
+  "envs": [
+    ["light", "none"],
+    ["dark", "none"]
+  ],
+  "shots": [
+    {
+      "name": "off",
+      "entry": "pages.settings-vault",
+      "variant": "off",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    },
+    {
+      "name": "pending",
+      "entry": "pages.settings-vault",
+      "variant": "pending",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    },
+    {
+      "name": "on",
+      "entry": "pages.settings-vault",
+      "variant": "on",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    },
+    {
+      "name": "approve",
+      "entry": "pages.settings-vault",
+      "variant": "approve",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    },
+    {
+      "name": "add",
+      "entry": "pages.settings-vault",
+      "variant": "add",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    },
+    {
+      "name": "import",
+      "entry": "pages.settings-vault",
+      "variant": "import",
+      "width": 820,
+      "height": 1700,
+      "deviceScaleFactor": 2,
+      "clip": "[data-card=\"vault\"]",
+      "arms": {
+        "now": ""
+      }
+    }
+  ]
+}

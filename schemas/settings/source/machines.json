@@ -726,6 +726,31 @@
             "follow",
             "machine"
           ]
+        },
+        {
+          "key": "cloud.vault.enabled",
+          "name": "vaultEnabled",
+          "title": {
+            "key": "settings.cloud.vault.enabled",
+            "text": "Sync Secrets with the cmux Vault"
+          },
+          "help": {
+            "key": "settings.cloud.vault.enabled.help",
+            "text": "Your secrets and env values, sealed to your devices and Cloud machines; the server can't read them. On adds this Mac; off stops syncing here and deletes nothing."
+          },
+          "kind": "toggle",
+          "default": false,
+          "keywords": [
+            "vault",
+            "secrets",
+            "env",
+            "dotenv",
+            "encrypted",
+            "end to end",
+            "cloud",
+            "sync",
+            "keys"
+          ]
         }
       ]
     },

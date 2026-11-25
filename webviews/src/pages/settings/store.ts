@@ -87,6 +87,10 @@ import {
   type CustomizeTryOn,
   type JoinConsentSurface,
   type KeysState,
+  type VaultKept,
+  type VaultPreview,
+  type VaultRead,
+  type VaultRun,
   type ModelsRun,
   type ModelsState,
   type AgentToolsCardRun,
@@ -1204,6 +1208,47 @@ export class SettingsStore {
   async revokeKey(id: string): Promise<string | null> {
     const reply = await this.request("cmux.settings.keys.revoke", { id });
     return reply.ok ? null : userMessage(reply.error, SETTINGS_SENTENCES);
+  }
+
+  /** Settings > Cloud > Vault: the vault as this Mac sees it, or the host's refusal (signed out,
+   * no CLI, the Cloud API down). */
+  async vault(): Promise<VaultRead> {
+    const reply = await this.request("cmux.settings.vault.state", {});
+    if (reply.ok) return { status: reply.value, error: null, code: null };
+    return { status: null, error: userMessage(reply.error, SETTINGS_SENTENCES), code: reply.error.code ?? null };
+  }
+
+  /** One vault gesture; the host's refusal text, else null. A `set` value goes to the host once
+   * and the store keeps no copy. */
+  async runVault(run: VaultRun): Promise<string | null> {
+    const reply = await this.request("cmux.settings.vault.run", run);
+    return reply.ok ? null : userMessage(reply.error, SETTINGS_SENTENCES);
+  }
+
+  /** Import from .env: the native panel picks the file (`token` and `scope` absent), or the picked
+   * file is read again for another scope; its names, or the refusal's text. */
+  async vaultImportPreview(
+    scope: string,
+    token?: string,
+  ): Promise<{ preview: VaultPreview | null; error: string | null }> {
+    const reply = token
+      ? await this.request("cmux.settings.vault.import_preview", { token, scope })
+      : await this.request("cmux.settings.vault.import_pick", { scope });
+    return reply.ok
+      ? { preview: reply.value, error: null }
+      : { preview: null, error: userMessage(reply.error, SETTINGS_SENTENCES) };
+  }
+
+  /** Keeps `names` of the picked file in `scope`; what was kept, or the refusal's text. */
+  async vaultImportKeep(
+    token: string,
+    names: string[],
+    scope: string,
+  ): Promise<{ kept: VaultKept | null; error: string | null }> {
+    const reply = await this.request("cmux.settings.vault.import_keep", { token, names, scope });
+    return reply.ok
+      ? { kept: reply.value, error: null }
+      : { kept: null, error: userMessage(reply.error, SETTINGS_SENTENCES) };
   }
 
   /** Settings > Server > This Mac on Your Tailnet: one `_acpmux/tailnet/<verb>` the app relays; the node's

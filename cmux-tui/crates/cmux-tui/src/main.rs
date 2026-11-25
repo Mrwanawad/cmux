@@ -165,6 +165,11 @@ mod test_wait;
 mod ui;
 mod update_notice;
 mod usage_patterns_cli;
+/// The end-to-end encrypted vault's background sync on a Mac (cmux vault, cloud.vault.enabled).
+/// Unix for its tests; only a Mac starts it (headless.rs).
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+mod vault_sync;
 mod version_report;
 
 use headless::run_headless;
