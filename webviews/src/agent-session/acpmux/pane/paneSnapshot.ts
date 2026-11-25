@@ -415,6 +415,9 @@ export type PaneSnapshotArgs = {
   /// The handshake loop stopped (hostRetry.ts `hostRetryStep`): the line offers Restart agent service.
   setHostGaveUp: React.Dispatch<React.SetStateAction<boolean>>;
   setHostRestoring: React.Dispatch<React.SetStateAction<HostRestoring | undefined>>;
+  /// The chat's Cloud machine is paused (cloudSleep.ts `cloudChatAsleep`), read at each failure: the
+  /// loop rests instead of asking again (hostRetry.ts `rest`), and the machine's wake asks.
+  cloudAsleep: React.RefObject<boolean>;
   runPendingAdoption: React.RefObject<() => void>;
   freshRef: React.RefObject<boolean>;
   inheritedFolderRef: React.MutableRefObject<string | undefined>;
@@ -558,6 +561,7 @@ export function paneSnapshotEffect({
   setHostTroubleSince,
   setHostGaveUp,
   setHostRestoring,
+  cloudAsleep,
   runPendingAdoption,
   freshRef,
   inheritedFolderRef,
@@ -922,6 +926,14 @@ export function paneSnapshotEffect({
   let stopped = false;
   /// The host's `acpmux-daemon-answered` already asked once in this stop (hostRetry.ts `hostWakeAsks`).
   let answerSpent = false;
+  /// The chat's Cloud machine is paused (hostRetry.ts `rest`, cloudSleep.ts): no timer asks again and
+  /// nothing is said. The chat keeps the rows it shows; the machine's wake asks again (`retryHost`).
+  const restAsleep = () => {
+    stopped = true;
+    setHostGaveUp(false);
+    setLinkDown(false);
+    setHostErrorShown(false);
+  };
   /// The user asked to retry while an attempt was in flight; run a full one when it ends.
   let retryPending = false;
   // A seeded first prompt (onboarding's first task). Swift hands it out once, so it is kept
@@ -1378,7 +1390,12 @@ export function paneSnapshotEffect({
             troubleForMs: failingSince - troubleSince,
             upForMs: failingSince - connectedAt,
             waitMs: lost.wait,
+            asleep: cloudAsleep.current === true,
           });
+          if (step.kind === "rest") {
+            restAsleep();
+            return;
+          }
           if (step.kind === "stop") {
             stopped = true;
             setHostGaveUp(true);
@@ -3029,10 +3046,16 @@ export function paneSnapshotEffect({
         // A reply too large to send is the same at every ask: only the line's Retry asks again.
         // Bounded (hostRetry.ts `hostRetryStep`): past SELF_RETRY_SAID_MS of trouble the timer
         // stops; the line says why with Retry, and an event asks again (`stopped`).
-        const step = hostRetryStep({ error, troubleForMs: Date.now() - troubleSince, waitMs: retryDelay });
+        const step = hostRetryStep({
+          error,
+          troubleForMs: Date.now() - troubleSince,
+          waitMs: retryDelay,
+          asleep: cloudAsleep.current === true,
+        });
         // A chat too large to open gets the same reply at every ask: only the line's Retry asks again.
         stopped = step.kind === "stop" && !tooLarge;
         setHostGaveUp(stopped);
+        if (step.kind === "rest") restAsleep();
         if (step.kind === "retry" && restartGate.mayAsk()) {
           retryTimer = window.setTimeout(() => void connectHost(), jitteredDelay(step.waitMs));
           retryDelay = nextRetryDelay(
@@ -3089,7 +3112,8 @@ export function paneSnapshotEffect({
   const wake = (event: Event) => {
     if (cancelled || !restartGate.mayAsk()) return;
     const hidden = document.visibilityState === "hidden";
-    if (!hostWakeAsks({ event: event.type, stopped, connecting, hidden, answerSpent })) return;
+    const asleep = cloudAsleep.current === true;
+    if (!hostWakeAsks({ event: event.type, stopped, connecting, hidden, answerSpent, asleep })) return;
     answerSpent = event.type === "acpmux-daemon-answered";
     void connectHost();
   };

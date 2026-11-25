@@ -6,6 +6,9 @@ import { useT } from "./i18n";
 
 type Props = {
   cloud?: CloudChatIdentity;
+  /// The machine a Resume wakes when the chat has no handshake identity yet (a chat opened while its
+  /// machine already slept): the app's paused link names it (cloudSleep.ts `cloudSleepingMachine`).
+  wakeMachine?: string;
   session?: string;
   active: boolean;
   recheck(): Promise<void>;
@@ -55,7 +58,14 @@ export async function beforeDeadline<T>(
 // chat opens, the machine is deleted, a read fails for good, or the chat/account changes or
 // unmounts; the resume has no deadline, each read has RECOVERY_READ_MS. Past RESUME_SLOW_MS it is
 // `slow`, and Resume machine asks the machine to wake again while the reads continue.
-export function useCloudChatRecovery({ cloud, session, active, recheck, readMs = RECOVERY_READ_MS }: Props) {
+export function useCloudChatRecovery({
+  cloud,
+  wakeMachine,
+  session,
+  active,
+  recheck,
+  readMs = RECOVERY_READ_MS,
+}: Props) {
   const t = useT();
   const [state, setState] = useState<CloudChatState>();
   const [resuming, setResuming] = useState(false);
@@ -165,14 +175,15 @@ export function useCloudChatRecovery({ cloud, session, active, recheck, readMs =
   const resume = () => {
     // Past the slow bound a click wakes the machine again; the reads already running go on.
     const again = resuming && slow;
-    if (!cloud || (resuming && !again) || (resumeInFlight.current && !again)) return;
+    const machine = cloud?.id ?? wakeMachine;
+    if (!machine || (resuming && !again) || (resumeInFlight.current && !again)) return;
     resumeInFlight.current = true;
     setError(false);
     setResumeRound((round) => round + 1);
     // Send the native call synchronously from the click: it consumes this gesture. The existing
     // attach path resumes this machine for either Cloud backend without opening another workspace.
     const attempt = ++resumeAttempt.current;
-    const action = postNative("cloudMachine.attach", { id: cloud.id });
+    const action = postNative("cloudMachine.attach", { id: machine });
     setResuming(true);
     void action.catch(() => {
       if (resumeAttempt.current === attempt) {

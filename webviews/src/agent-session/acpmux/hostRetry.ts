@@ -73,11 +73,23 @@ export const SELF_RETRY_SAID_MS = 120_000;
 /// reconnects that machine's link itself and sends the pane nothing when it is back, so the pane has
 /// no event to wait for; its line already says so with Retry (hostLine.ts PEER_LINK_DEADLINE_MS).
 /// A chat too large to open stops at once: asking again gets the same reply.
-export type HostRetryStep = { kind: "retry"; waitMs: number } | { kind: "stop" };
+///
+/// A Cloud chat whose machine is paused (`asleep`, cloudSleep.ts `cloudChatAsleep`) rests: no timer,
+/// no "Reconnecting…", no failure line. Asking a paused machine again cannot reach it (and must not
+/// wake it), so the pane keeps the chat it shows and asks again only when the machine wakes: a send or
+/// a keystroke resumes it (cloudWake.ts), or the app reads it live again (cmux#57136: "this has
+/// reconnecting very often… are we not pausing this vm when the agent isn't active?").
+export type HostRetryStep = { kind: "retry"; waitMs: number } | { kind: "stop" } | { kind: "rest" };
 
-export function hostRetryStep(state: { error: unknown; troubleForMs: number; waitMs: number }): HostRetryStep {
+export function hostRetryStep(state: {
+  error: unknown;
+  troubleForMs: number;
+  waitMs: number;
+  asleep?: boolean;
+}): HostRetryStep {
   const { error, troubleForMs, waitMs } = state;
   if (hostRefusedTooLarge(error)) return { kind: "stop" };
+  if (state.asleep) return { kind: "rest" };
   if (troubleForMs < SELF_RETRY_SAID_MS) return { kind: "retry", waitMs };
   if (peerLinkFailure(error)) return { kind: "retry", waitMs: Math.max(waitMs, REFUSED_RETRY_MAX_MS) };
   return { kind: "stop" };
@@ -87,8 +99,14 @@ export function hostRetryStep(state: { error: unknown; troubleForMs: number; wai
 /// the pane's trouble has lasted SELF_RETRY_SAID_MS and this connection did not stay up
 /// (CONNECTION_STABLE_MS): a daemon that accepts the pane and drops it again every time is not
 /// asked again forever. A connection that stayed up always reconnects at once.
-export function lostRetryStep(state: { troubleForMs: number; upForMs: number; waitMs: number }): HostRetryStep {
+export function lostRetryStep(state: {
+  troubleForMs: number;
+  upForMs: number;
+  waitMs: number;
+  asleep?: boolean;
+}): HostRetryStep {
   const { troubleForMs, upForMs, waitMs } = state;
+  if (state.asleep) return { kind: "rest" };
   if (upForMs >= CONNECTION_STABLE_MS || troubleForMs < SELF_RETRY_SAID_MS) return { kind: "retry", waitMs };
   return { kind: "stop" };
 }
@@ -106,15 +124,18 @@ export const HOST_WAKE_EVENTS = {
 /// `visibilitychange` to visible asks), never while an attempt or a restart runs. The host's
 /// `acpmux-daemon-answered` asks once per stop (`answerSpent`): two stopped panes whose daemon
 /// answers lookups but fails their connection would otherwise wake each other forever, each ask's
-/// lookup telling the other pane. A person's event (shown, focused, online) asks again.
+/// lookup telling the other pane. A person's event (shown, focused, online) asks again. A Cloud chat
+/// whose machine is paused (`asleep`) is never asked on these: focusing the window would only fail
+/// again on the paused machine; its wake asks instead (`hostRetryStep` `rest`).
 export function hostWakeAsks(state: {
   event: string;
   stopped: boolean;
   connecting: boolean;
   hidden: boolean;
   answerSpent: boolean;
+  asleep?: boolean;
 }): boolean {
-  if (!state.stopped || state.connecting || state.hidden) return false;
+  if (!state.stopped || state.connecting || state.hidden || state.asleep) return false;
   return state.event !== "acpmux-daemon-answered" || !state.answerSpent;
 }
 

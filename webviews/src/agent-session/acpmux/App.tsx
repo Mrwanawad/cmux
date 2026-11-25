@@ -204,6 +204,8 @@ import { isNewChat, projectName } from "./emptyStateModel";
 import type { TourOfferActions } from "./repoTour/TourOffer";
 import { dismissTour, isTourDismissed, offersTour, TOUR_PROMPT, type TourTask } from "./repoTour/tourModel";
 import { useCloudChatRecovery } from "./useCloudChatRecovery";
+import { cloudChatAsleep, cloudSleepingMachine, cloudWakeAsksAgain } from "./cloudSleep";
+import { useMachineLink } from "./machineLink";
 import { cloudChatRecoveryActive, cloudChatUnavailable, type CloudChatIdentity } from "./cloudChatRecovery";
 import { cloudSendWakes, cloudTypingWakes, type CloudWakeState } from "./cloudWake";
 import { type PastTurn } from "./pastChatModel";
@@ -6443,32 +6445,51 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   const [cloudTypeWaking, setCloudTypeWaking] = useState(false);
   /// The chat whose machine typing woke in this stretch of its sleep: one wake per sleep, not per key.
   const cloudTypeWoke = useRef<string | undefined>(undefined);
+  /// The app's link word for this pane's machine (machineLink.ts): `paused` for a paused Cloud machine.
+  const paneMachineLink = useMachineLink();
   const cloudRecovery = useCloudChatRecovery({
     cloud: cloudChatIdentity,
+    wakeMachine: cloudSleepingMachine(paneMachineLink),
     session: snapshot.missingSession ?? snapshot.sessionId,
     active: cloudRecoveryShows || cloudWaking || cloudTypeWaking,
     recheck: recheckCloudChat,
   });
+  /// The chat's Cloud machine is paused (cloudSleep.ts, cmux#57136): the handshake loop rests and the
+  /// pane says nothing about its link, keeping the chat it shows; a send or a keystroke wakes the
+  /// machine (cloudWake.ts), and once it stops reading asleep the pane asks again.
+  const cloudAsleep = cloudChatAsleep({ link: paneMachineLink, recovery: cloudRecovery.state });
+  const cloudAsleepRef = useRef(cloudAsleep);
+  cloudAsleepRef.current = cloudAsleep;
+  const cloudAsleepBefore = useRef(cloudAsleep);
+  useEffect(() => {
+    const wasAsleep = cloudAsleepBefore.current;
+    cloudAsleepBefore.current = cloudAsleep;
+    if (cloudWakeAsksAgain({ wasAsleep, asleep: cloudAsleep, connected: directClient.current !== undefined }))
+      retryHost.current?.();
+  }, [cloudAsleep]);
+  const cloudRecoveryState = cloudRecovery.state ?? (cloudAsleep ? "paused" : undefined);
   const cloudUnavailable =
     cloudRecoveryShows &&
-    (cloudRecovery.state === "paused" ||
-      cloudRecovery.state === "deleted" ||
-      (cloudRecovery.resuming && cloudRecovery.state === "live"))
+    (cloudRecoveryState === "paused" ||
+      cloudRecoveryState === "deleted" ||
+      (cloudRecovery.resuming && cloudRecoveryState === "live"))
       ? cloudChatUnavailable(
           snapshot.unavailable ?? { reason: "offline" },
-          cloudRecovery.state,
+          cloudRecoveryState,
           machineName,
           cloudRecovery.resuming,
         )
       : snapshot.unavailable;
   /// The chat a send now wakes its Cloud machine for (cloudWake.ts), or undefined.
   const cloudWakeState: CloudWakeState = {
-    cloud: cloudChatIdentity !== undefined,
+    // A chat opened while its machine already slept has no handshake identity: the app's paused link
+    // names the machine a send wakes (cloudSleep.ts `cloudSleepingMachine`).
+    cloud: cloudChatIdentity !== undefined || cloudSleepingMachine(paneMachineLink) !== undefined,
     chat: snapshot.sessionId ?? snapshot.missingSession,
     // `connected`, not `cloudLinkUp`: a prompt's own failure on an open socket also reads "failed",
     // and that chat's machine is live.
     linkUp: connected && Boolean(window.cmuxAcpmuxActions?.["chat.send"]),
-    paused: cloudRecovery.state === "paused",
+    paused: cloudRecoveryState === "paused",
     unavailable: !!snapshot.unavailable,
   };
   const cloudWakeChat = cloudSendWakes(cloudWakeState);
@@ -7075,7 +7096,9 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
     openFailed ||
     (clientSnapshot.sessionId === adoptingSession && clientSnapshot.chatRead === true);
   const chatDrawn = (!awaitsChat || clientSnapshot.chatRead === true || openFailed) && adoptionDrawn;
-  const hostErrorSaid = hostError !== undefined && (hostErrorShown || restartingAcpmux);
+  // A paused Cloud machine's chat says nothing about its link (cloudSleep.ts): it rests, it is not lost.
+  const hostErrorSaid =
+    hostError !== undefined && ((hostErrorShown && !(cloudAsleep && !connected)) || restartingAcpmux);
   const showsWhatItIs =
     (!handshaken &&
       restoredTailSession !== undefined &&
@@ -8086,6 +8109,7 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
       setHostTroubleSince,
       setHostGaveUp,
       setHostRestoring,
+      cloudAsleep: cloudAsleepRef,
       runPendingAdoption,
       freshRef,
       inheritedFolderRef,
@@ -8278,7 +8302,7 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   const wakeOnTyping = () => {
     const chat = cloudTypingWakes({
       ...cloudWakeState,
-      asleep: cloudRecovery.state === "paused" || chatMachine?.stage === "paused",
+      asleep: cloudAsleep || cloudRecovery.state === "paused" || chatMachine?.stage === "paused",
       woke: cloudTypeWoke.current,
     });
     if (!chat || cloudRecovery.state === "deleted" || snapshot.summary?.watching) return;
@@ -10769,7 +10793,9 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   );
   // The composer's status dot says the quiet recovery below instead, once mounted (composerStatusStore.ts).
   usePublishHostRecovery(
-    restartingAcpmux ? undefined : { linkDown, restoring: hostRestoring, failureShown: hostErrorSaid },
+    restartingAcpmux
+      ? undefined
+      : { linkDown: linkDown && !cloudAsleep, restoring: hostRestoring, failureShown: hostErrorSaid },
   );
   // While the pane gets its chat back on its own, one quiet line says so: "Restoring sessions…"
   // while the host says acpmux restores, "Reconnecting…" while the link is down for real (`linkDown`).
@@ -10781,7 +10807,7 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
         hostErrorCard
       ) : (
         <HostRecoveringLine
-          linkDown={linkDown}
+          linkDown={linkDown && !cloudAsleep}
           restoring={hostRestoring}
           failureShown={hostErrorSaid}
           otherwise={hostErrorCard}
