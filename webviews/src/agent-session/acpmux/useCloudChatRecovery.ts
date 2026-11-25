@@ -125,7 +125,16 @@ export function useCloudChatRecovery({
     // next one starts (`retry`): a slow machine is never a terminal resume failure, and a call that
     // never answers no longer stops the reads for good. The card reads again only while resuming.
     const read = async () => {
-      if (disposed || !identity || !active) return;
+      if (disposed || !active) return;
+      // A chat with no handshake identity yet (opened while its machine slept) woken by its paused
+      // link's machine (`wakeMachine`): no list read can name its machine, so the resume asks the pane
+      // to connect each second; the handshake then gives the identity and the reads above take over.
+      if (!identity) {
+        if (!resuming) return;
+        await beforeDeadline(recheck(), performance.now() + readMs, left.signal).catch(() => undefined);
+        retry();
+        return;
+      }
       const deadline = performance.now() + readMs;
       try {
         const replyResult = await beforeDeadline(

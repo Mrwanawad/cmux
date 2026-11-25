@@ -84,8 +84,9 @@ test("the app's link word says the machine sleeps; it wins over the recovery's o
   expect(cloudChatAsleep({ link: paused, recovery: undefined })).toBe(true);
   // Woken elsewhere: the app's link reads it on its way, so the pane never rests on a running machine.
   expect(cloudChatAsleep({ link: resuming, recovery: "paused" })).toBe(false);
-  // A chat on this Mac (no link word): only the recovery's read says.
-  expect(cloudChatAsleep({ link: null, recovery: "paused" })).toBe(true);
+  // No link word (a chat on this Mac, or the app not knowing the machine yet): the recovery's one read
+  // never makes the pane rest, since it does not follow a resume elsewhere.
+  expect(cloudChatAsleep({ link: null, recovery: "paused" })).toBe(false);
   expect(cloudChatAsleep({ link: null, recovery: "live" })).toBe(false);
   expect(cloudChatAsleep({ link: null, recovery: undefined })).toBe(false);
 });

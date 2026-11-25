@@ -158,6 +158,7 @@ import {
   HOST_WAKE_EVENTS,
   hostWakeAsks,
   lostRetryStep,
+  RETRY_FIRST_MS,
 } from "../hostRetry";
 import { heldStartStop, sendsHeldForHost, untilHostAnswers } from "../sendWhenReady";
 import { revealedSubagent } from "../subagents/subagentPanes";
@@ -930,6 +931,13 @@ export function paneSnapshotEffect({
   /// nothing is said. The chat keeps the rows it shows; the machine's wake asks again (`retryHost`).
   const restAsleep = () => {
     stopped = true;
+    // A rest is no trouble: the machine's wake starts a fresh recovery, with its own quick asks and
+    // deadlines, not one already past its bound from before the pause (else its first failed ask
+    // would stop the loop for good and say the failure at once).
+    failingSince = undefined;
+    troubleSince = undefined;
+    retryDelay = RETRY_FIRST_MS;
+    setHostTroubleSince(undefined);
     setHostGaveUp(false);
     setLinkDown(false);
     setHostErrorShown(false);

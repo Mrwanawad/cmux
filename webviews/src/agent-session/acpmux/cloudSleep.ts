@@ -16,13 +16,12 @@ export type CloudSleepFacts = {
   recovery: CloudChatState | undefined;
 };
 
-/// Whether the chat's Cloud machine sleeps, as the pane knows it now. The app's own link word wins
-/// when the app sends one, since it follows the machine record live: a machine woken elsewhere stops
-/// reading asleep at once, so the pane never rests on a running machine. Without it (an older app),
-/// the recovery's read of the account's machine list says.
+/// Whether the chat's Cloud machine sleeps, as the pane knows it now: only the app's own link word
+/// says, since it follows the machine record live, so a machine woken elsewhere stops reading asleep
+/// at once and the pane never rests on a running machine. The recovery's read (`recovery`) is one
+/// read, not followed, so it never makes the pane rest: without a link word the pane recovers as before.
 export function cloudChatAsleep(facts: CloudSleepFacts): boolean {
-  if (facts.link) return facts.link.link === "paused";
-  return facts.recovery === "paused";
+  return facts.link?.link === "paused";
 }
 
 /// The Cloud machine a send or a keystroke wakes while the chat rests, when the pane has no Cloud
