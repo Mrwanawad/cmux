@@ -45,6 +45,8 @@ mi_arms=(
 started_at=$SECONDS
 root="$(git rev-parse --show-toplevel)"
 command -v cargo >/dev/null || "$root/scripts/install-rust-ci.sh"
+# cmux-tui links libghostty-vt: a pool checkout can come without the submodule.
+(cd "$root" && { [ -f ghostty-next/build.zig ] || [ -n "${CMUX_GHOSTTY_SRC:-}" ] || git submodule update --init --depth 1 ghostty-next; })
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
 export CARGO_TARGET_DIR="${RUNNER_TEMP:-/tmp}/alloc-musl-ab-target"
