@@ -76,6 +76,16 @@ impl Layer {
                     },
                     _ => None,
                 };
+                // A swapped `.git` (`crate::git_swap`): what Bring Back's git leg reads of the
+                // machine's repository, as if git had written it in the upper layer.
+                #[cfg(unix)]
+                if let Some(target) = link.as_deref().map(Path::new).filter(|target| {
+                    child.rsplit('/').next() == Some(".git")
+                        && crate::git_swap::is_local_dir(state, target)
+                }) {
+                    upper.extend(swapped(&child, target)?);
+                    continue;
+                }
                 upper.push(Upper {
                     path: child.clone(),
                     kind,
@@ -119,6 +129,37 @@ impl Layer {
         }
         Ok(layer)
     }
+}
+
+/// The listing of the swapped `.git` at `dotgit` (a path of the upper layer), the machine's
+/// repository at `local`: its folders, then [`crate::git_swap::export_for_back`]'s files.
+#[cfg(unix)]
+fn swapped(dotgit: &str, local: &Path) -> anyhow::Result<Vec<Upper>> {
+    let files = crate::git_swap::export_for_back(local)?;
+    let mut folders = std::collections::BTreeSet::new();
+    for file in &files {
+        let mut at = file.as_str();
+        while let Some(cut) = at.rfind('/') {
+            at = &at[..cut];
+            folders.insert(at.to_owned());
+        }
+    }
+    let entry = |relative: &str, meta: &fs::Metadata, kind: Kind| Upper {
+        path: if relative.is_empty() { dotgit.to_owned() } else { format!("{dotgit}/{relative}") },
+        kind,
+        size: if kind == Kind::Dir { 0 } else { meta.len() },
+        mode: meta.mode() & 0o7777,
+        mtime_ns: mtime_of(meta),
+        link: None,
+    };
+    let mut out = vec![entry("", &fs::metadata(local)?, Kind::Dir)];
+    for folder in &folders {
+        out.push(entry(folder, &fs::metadata(local.join(folder))?, Kind::Dir));
+    }
+    for file in &files {
+        out.push(entry(file, &fs::metadata(local.join(file))?, Kind::File));
+    }
+    Ok(out)
 }
 
 /// Writes each of `paths` (files of the upper layer in `state`) to `out` as its length (u64,

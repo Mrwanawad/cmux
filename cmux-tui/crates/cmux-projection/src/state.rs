@@ -114,8 +114,9 @@ pub fn update(state: &Path, at: &Path, change: impl FnOnce(&mut Record)) -> io::
 }
 
 /// What the agent wrote, as one value: a hash of every path in `upper/` (its kind, size, mode,
-/// inode, modification and change times) and of the `whiteouts` file. Any write, new file,
-/// delete, rename or `chmod` changes it. O(edits): only the upper layer is walked, never the
+/// inode, modification and change times) and of the `whiteouts` file, and of each swapped
+/// repository's refs, HEAD and index ([`crate::git_swap::print`]). Any write, new file, delete,
+/// rename, `chmod` or commit changes it. O(edits): only the upper layer is walked, never the
 /// projected folder. A path that cannot be read fails it, so nothing is freed on a guess.
 ///
 /// # Errors
@@ -124,7 +125,7 @@ pub fn mark(state: &Path) -> io::Result<String> {
     let mut hash = Fnv::default();
     let upper = state.join("upper");
     if fs::symlink_metadata(&upper).is_ok_and(|meta| meta.is_dir()) {
-        walk(&upper, "", &mut hash)?;
+        walk(state, &upper, "", &mut hash)?;
     }
     match fs::read(state.join("whiteouts")) {
         Ok(bytes) => {
@@ -137,7 +138,7 @@ pub fn mark(state: &Path) -> io::Result<String> {
     Ok(format!("{:016x}", hash.0))
 }
 
-fn walk(folder: &Path, relative: &str, hash: &mut Fnv) -> io::Result<()> {
+fn walk(state: &Path, folder: &Path, relative: &str, hash: &mut Fnv) -> io::Result<()> {
     let mut names: Vec<_> = fs::read_dir(folder)?
         .map(|entry| entry.map(|entry| entry.file_name()))
         .collect::<Result<_, _>>()?;
@@ -155,7 +156,15 @@ fn walk(folder: &Path, relative: &str, hash: &mut Fnv) -> io::Result<()> {
             hash.add(&time.to_le_bytes());
         }
         if meta.is_dir() {
-            walk(&path, &child, hash)?;
+            walk(state, &path, &child, hash)?;
+        } else if meta.file_type().is_symlink() {
+            // A swapped `.git` names the machine's repository, whose commits are the agent's
+            // writes too (`crate::git_swap::print`).
+            let target = fs::read_link(&path)?;
+            if crate::git_swap::is_local_dir(state, &target) {
+                hash.add(b"\0git\0");
+                hash.add(&crate::git_swap::print(&target));
+            }
         }
     }
     Ok(())

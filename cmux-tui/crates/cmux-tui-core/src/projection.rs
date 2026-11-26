@@ -406,6 +406,9 @@ struct Projected {
     /// Its away episodes: the agent is told once of each ([`away_notice`]).
     #[cfg(target_os = "linux")]
     away: Arc<cmux_projection::away::Away>,
+    /// Held while its repositories swap ([`start_git_swap`]): one pass at a time.
+    #[cfg(target_os = "linux")]
+    git_swap: Mutex<()>,
 }
 
 impl Projected {
@@ -1152,6 +1155,9 @@ fn extend(
     }
     open_barrier(&projected)?;
     attached(name, at);
+    if let Ok(state) = state_of(name) {
+        start_git_swap(&projected, at, &state);
+    }
     let data = json!({
         "at": at,
         "extended": true,
@@ -1302,6 +1308,7 @@ fn mount(
         barrier: Mutex::new(None),
         mounted: Mutex::new(Some(mounted)),
         away,
+        git_swap: Mutex::new(()),
     });
     table.insert(name.to_owned(), projected.clone());
     if head {
@@ -1333,26 +1340,9 @@ fn mount(
     } else if let Some(barrier) = old_barrier.take() {
         let _ = barrier.complete();
     }
-    // RFD 0007, seed bundles: with `CMUX_PROJECTION_GIT_SWAP=1`, a `.git` with a public remote
-    // takes its objects from the remote (a blobless fetch the machine makes) and only what the
-    // Mac has unpushed over the link, then switches from projection to that repository. Opt-in
-    // until Bring Back reads the machine's repository after a swap.
-    if std::env::var_os("CMUX_PROJECTION_GIT_SWAP").is_some_and(|value| value == "1") {
-        let swapping = projected.clone();
-        let (at, state) = (at.to_path_buf(), state.to_path_buf());
-        let _ = std::thread::Builder::new().name("projection-git-swap".into()).spawn(move || {
-            let forget =
-                || match swapping.mounted.lock().unwrap_or_else(PoisonError::into_inner).as_ref() {
-                    Some(mounted) => mounted.forget_entry(overlay.root(), ".git"),
-                    None => Ok(()),
-                };
-            match cmux_projection::git_swap::run(&overlay, &forget, &at, &state) {
-                Ok(outcome) => eprintln!("cmux projection: {} .git: {outcome:?}", at.display()),
-                Err(error) => {
-                    eprintln!("cmux projection: {} .git stays projected: {error:#}", at.display());
-                }
-            }
-        });
+    // A head mount holds a few entries only: its repositories swap once the extend lands.
+    if !head {
+        start_git_swap(&projected, at, state);
     }
     // The record the reaper reads: where it is, since when, and a release or Bring Back undone (a
     // dial again means the chat is live). One that cannot be written leaves the state to the orphan grace,
@@ -1368,6 +1358,49 @@ fn mount(
         record.brought_back = None;
     });
     Ok(projected)
+}
+
+/// RFD 0007, seed bundles (issue 57201): every repository of the projected folder at `at`, its
+/// own and the clones in folders below it, takes its objects from its public remote (a blobless
+/// fetch the machine makes) and only what the Mac has unpushed over the link, then switches from
+/// projection to that repository; Bring Back reads it there
+/// (`cmux_projection::git_swap::export_for_back`). In the background, shallowest first; a pass
+/// already running is left to finish. `CMUX_PROJECTION_GIT_SWAP=0` keeps every `.git` projected.
+#[cfg(target_os = "linux")]
+fn start_git_swap(projected: &Arc<Projected>, at: &Path, state: &Path) {
+    if !cmux_projection::git_swap::enabled() {
+        return;
+    }
+    let swapping = projected.clone();
+    let (at, state) = (at.to_path_buf(), state.to_path_buf());
+    let _ = std::thread::Builder::new().name("projection-git-swap".into()).spawn(move || {
+        let Ok(_pass) = swapping.git_swap.try_lock() else { return };
+        let overlay = swapping.overlay.clone();
+        let forget = |parent: u64| match swapping
+            .mounted
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_ref()
+        {
+            Some(mounted) => mounted.forget_entry(parent, ".git"),
+            None => Ok(()),
+        };
+        for repo in cmux_projection::git_swap::repositories(&at) {
+            let started = std::time::Instant::now();
+            let shown = if repo.is_empty() { ".".to_owned() } else { repo.clone() };
+            match cmux_projection::git_swap::run_repo(&overlay, &forget, &at, &repo, &state) {
+                Ok(outcome) => eprintln!(
+                    "cmux projection: {} {shown}/.git: {outcome:?} in {} ms",
+                    at.display(),
+                    started.elapsed().as_millis()
+                ),
+                Err(error) => eprintln!(
+                    "cmux projection: {} {shown}/.git stays projected: {error:#}",
+                    at.display()
+                ),
+            }
+        }
+    });
 }
 
 #[cfg(not(target_os = "linux"))]

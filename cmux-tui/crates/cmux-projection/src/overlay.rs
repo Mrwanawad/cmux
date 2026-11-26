@@ -398,8 +398,8 @@ pub struct Overlay {
     pins_file: PathBuf,
     /// The free disk a pin leaves untouched ([`pin::DEFAULT_PIN_RESERVE`]).
     pin_reserve: u64,
-    /// Held for reading while a top-level name is looked up, and for writing while a swap
-    /// replaces one ([`Overlay::swap_to_link`]), so no lookup pairs the old kind with the new
+    /// Held for reading while a top-level name or a `.git` below is looked up, and for writing
+    /// while a swap replaces one ([`Overlay::swap_to_link`]), so no lookup pairs the old kind with the new
     /// number.
     swap: RwLock<()>,
 }
@@ -1136,7 +1136,8 @@ impl Overlay {
             return found;
         }
         let (_, child) = self.child(parent, name)?;
-        let _swap = (!child.contains('/'))
+        // Top-level names and a nested repository's `.git`: the names a swap replaces.
+        let _swap = (!child.contains('/') || child.ends_with("/.git"))
             .then(|| self.swap.read().unwrap_or_else(PoisonError::into_inner));
         let node = self.node(&child).ok_or(ENOENT)?;
         Ok(self.attr(&child, &node))
