@@ -13,7 +13,7 @@
 # daemon's RSS at fixed times from proc.ndjson so a slope that levels off shows). All builds: no LTO, 16 codegen
 # units, a target directory of their own (the heap is the program's data, not its code).
 #   cmux-ci test -- bash -c 'scripts/measure/alloc-musl-ab.sh [repeat=3] [count=1000] [cap=64] [seconds=600]
-#     [budget=11000] [stream=1]'
+#     [budget=10100] [stream=1] [open_probe=32] [arms=mimalloc,mi-lean,...]'
 set -euo pipefail
 repeat=3
 count=1000
@@ -21,6 +21,8 @@ cap=64
 seconds=600
 budget=11000
 stream=1
+open_probe=32
+only=""
 for arg in "$@"; do
   case "$arg" in
     repeat=*) repeat="${arg#repeat=}" ;;
@@ -29,6 +31,8 @@ for arg in "$@"; do
     seconds=*) seconds="${arg#seconds=}" ;;
     budget=*) budget="${arg#budget=}" ;;
     stream=*) stream="${arg#stream=}" ;;
+    open_probe=*) open_probe="${arg#open_probe=}" ;;
+    arms=*) only="${arg#arms=}" ;;
     *) echo "alloc-musl-ab.sh: unknown argument $arg" >&2; exit 2 ;;
   esac
 done
@@ -96,6 +100,8 @@ for spec in "${mi_arms[@]}"; do
   arms+=("$name")
 done
 arms+=(mallocng glibc)
+# arms=a,b,... keeps only those (a follow-up job on fewer arms).
+if [[ -n "$only" ]]; then IFS=, read -r -a arms <<<"$only"; fi
 cd "$root"
 ulimit -n 65536 2>/dev/null || ulimit -n "$(ulimit -Hn)" || true
 echo "MAB arms=${arms[*]} repeat=$repeat count=$count cap=$cap seconds=$seconds head=$(git rev-parse HEAD)" \
@@ -106,7 +112,7 @@ status=0
 parked() {
   local arm="$1" r="$2" log="$ab/p-$1-$2.log"
   python3 scripts/measure/infinite-items.py --acpmux "$ab/$arm/acpmux" --tui "$ab/$arm/cmux-tui" \
-    --counts "$count" --days 1 --resident-cap "$cap" --park-idle >"$log" 2>&1 || status=$?
+    --counts "$count" --days 1 --resident-cap "$cap" --park-idle --open-probe "$open_probe" >"$log" 2>&1 || status=$?
   python3 - "$log" "$arm" "$r" "$count" >>"$ab/parked.tsv" <<'PY'
 import json, re, sys
 log, arm, r, n = sys.argv[1:5]
