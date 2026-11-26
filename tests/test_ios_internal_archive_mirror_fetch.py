@@ -10,8 +10,8 @@ failed in "Checkout the commit": actions/checkout's github.com fetch stalled (cu
 
 .github/workflows/ios-internal-nightly.yml now
 - checks the commit out of the host's verified git mirror (the same borrow as nightly.yml's warm checkout:
-  alternates plus glaeda-mirror-borrow.json) and runs actions/checkout only when the mirror has no copy,
-  with git's low-speed abort so a stalled transfer is retried instead of holding the step;
+  alternates plus glaeda-mirror-borrow.json) and runs the bounded GitHub fetch only when the mirror has no
+  copy, with git's low-speed abort so a stalled transfer is retried instead of holding the step;
 - points a fleet Mac's package clones at a directory under its home (CMUX_MOBILE_SPM_CACHE), and
   cmux-next-ios/scripts/testflight-build.sh resolves from kept clones (-skipPackageUpdates) before any
   network resolve, with the same low-speed abort.
@@ -143,7 +143,7 @@ class ArchiveCheckoutFromMirrorTest(unittest.TestCase):
         (self.mirror / "glaeda-repair-pending").write_text("")
         result, outputs = self.run_step()
         self.assertEqual(outputs.get("source"), "github")
-        self.assertFalse((self.ws / ".git").exists(), "no mirror: the workspace is left to actions/checkout")
+        self.assertFalse((self.ws / ".git").exists(), "no mirror: the workspace is left to the GitHub fetch")
 
     def test_commit_the_mirror_lacks_goes_to_github(self) -> None:
         result, outputs = self.run_step("0" * 40)
@@ -158,10 +158,10 @@ class ArchiveCheckoutFromMirrorTest(unittest.TestCase):
         self.assertLess(names.index(MIRROR_STEP), names.index(GITHUB_STEP))
         github = step(GITHUB_STEP)
         self.assertEqual(github["if"], "steps.mirror-checkout.outputs.source != 'mirror'")
-        self.assertEqual(github["with"]["fetch-depth"], 1)
-        env = github["env"]
-        pairs = {env[f"GIT_CONFIG_KEY_{i}"]: env[f"GIT_CONFIG_VALUE_{i}"] for i in range(int(env["GIT_CONFIG_COUNT"]))}
-        self.assertEqual(pairs, {"http.lowSpeedLimit": "1024", "http.lowSpeedTime": "60"})
+        run = github["run"]
+        self.assertIn("--depth=1", run)
+        self.assertIn("http.lowSpeedLimit=1024", run)
+        self.assertIn("http.lowSpeedTime=45", run)
 
 
 class ArchiveKeepsSwiftPackagesTest(unittest.TestCase):
