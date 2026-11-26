@@ -1151,6 +1151,8 @@ pub enum Command {
     #[command(hide = true)]
     Retention(RetentionArgs),
     #[command(hide = true)]
+    TranscriptOffload(TranscriptOffloadArgs),
+    #[command(hide = true)]
     Status {
         #[arg(long)]
         show_token: bool,
@@ -2128,6 +2130,9 @@ pub enum DaemonCmd {
     /// Compact the event logs of chats closed for longer than `store.closedLogDays` (default
     /// 14): their raw harness lines and long tool output go, their messages stay.
     Retention(RetentionArgs),
+    /// Copy Claude's and Codex's transcripts to cloud history, read-only (setting
+    /// `agents.chats.transcriptOffload`, off by default).
+    TranscriptOffload(TranscriptOffloadArgs),
     /// Print the RPC schema (methods, notifications, types, exit codes) as JSON.
     Schema,
     /// Every model id each harness declares or reports (`provider/model` for OpenCode and pi).
@@ -2136,6 +2141,20 @@ pub enum DaemonCmd {
         #[arg(long)]
         refresh: bool,
     },
+}
+
+#[derive(Args, Debug, Clone, PartialEq, Eq)]
+pub struct TranscriptOffloadArgs {
+    /// List the transcripts and bytes that would be copied and removed locally; upload nothing,
+    /// change nothing. Runs here, with no daemon and no cloud needed.
+    #[arg(long, conflicts_with = "restore_all")]
+    pub dry_run: bool,
+    /// Transcripts unchanged for longer than this many days, instead of the setting.
+    #[arg(long)]
+    pub older_than_days: Option<u32>,
+    /// Bring back every transcript a pass removed (undo).
+    #[arg(long)]
+    pub restore_all: bool,
 }
 
 #[derive(Args, Debug, Clone, PartialEq, Eq)]
@@ -2332,6 +2351,7 @@ pub fn flatten(c: Command) -> Command {
             DaemonCmd::Harnesses => Command::Harnesses,
             DaemonCmd::Reload => Command::Reload,
             DaemonCmd::Retention(args) => Command::Retention(args),
+            DaemonCmd::TranscriptOffload(args) => Command::TranscriptOffload(args),
             DaemonCmd::Schema => Command::Schema,
             DaemonCmd::Models { refresh } => Command::Models { refresh },
         },

@@ -44,7 +44,7 @@ pub(super) async fn retention(
     m: &str,
     params: &Value,
 ) -> Option<Result<Value, RpcError>> {
-    if m != method::MUX_RETENTION {
+    if m != method::MUX_RETENTION && m != method::MUX_TRANSCRIPT_OFFLOAD {
         return None;
     }
     if conn.origin.web_class() {
@@ -63,6 +63,14 @@ pub(super) async fn retention(
             }
         },
     };
+    if m == method::MUX_TRANSCRIPT_OFFLOAD {
+        let req = crate::hub::TranscriptOffloadRequest {
+            dry_run: params.get("dryRun").and_then(Value::as_bool).unwrap_or(false),
+            older_than_days: days,
+            restore_all: params.get("restoreAll").and_then(Value::as_bool).unwrap_or(false),
+        };
+        return Some(hub.transcript_offload_now(req).await);
+    }
     let archive = str_param(params, "archive").map(PathBuf::from);
     if archive.as_ref().is_some_and(|a| !a.is_absolute()) {
         return Some(Err(RpcError::invalid_params("archive must be an absolute folder")));

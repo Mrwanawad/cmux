@@ -130,6 +130,9 @@ impl Hub {
                         {
                             tracing::warn!("cold archive pass: {e}");
                         }
+                        // Read-only cloud copies of Claude's and Codex's own transcripts
+                        // (`transcript_offload.rs`), when their setting is on.
+                        hub.transcript_offload_pass().await;
                     }
                 }
                 // Size pressure (`store_pressure.rs`): measured at every wake and at least every
