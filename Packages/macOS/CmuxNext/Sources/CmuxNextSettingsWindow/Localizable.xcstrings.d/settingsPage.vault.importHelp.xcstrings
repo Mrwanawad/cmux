@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.importHelp" : {
+      "comment" : "Settings > Cloud > Vault: the import panel before a file is chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a .env file. You'll see names, never values."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ملف .env. سترى الأسماء، وليس القيم أبدًا."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odaberi .env datoteku. Vidiš imena, nikad vrijednosti."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vælg en .env-fil. Du ser navne, aldrig værdier."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle eine .env-Datei. Du siehst Namen, nie Werte."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige un archivo .env. Verás nombres, nunca valores."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez un .env. Noms visibles, jamais les valeurs."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un file .env. Vedrai i nomi, mai i valori."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ".env ファイルを選択します。名前だけが表示され、値は表示されません。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ជ្រើសឯកសារ .env។ អ្នកឃើញតែឈ្មោះ មិនឃើញតម្លៃ។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ".env 파일을 선택하세요. 이름만 보이고 값은 보이지 않습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en .env-fil. Du ser navn, aldri verdier."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wybierz plik .env. Zobaczysz nazwy, nigdy wartości."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha um arquivo .env. Você verá nomes, nunca valores."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите файл .env. Вы увидите имена, но не значения."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เลือกไฟล์ .env คุณจะเห็นชื่อ แต่ไม่เห็นค่า"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir .env dosyası seç. Adları görürsün, değerleri asla."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Виберіть файл .env. Ви побачите імена, але не значення."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn tệp .env. Bạn chỉ thấy tên, không thấy giá trị."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择 .env 文件。你只会看到名称，不会看到值。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇 .env 檔案。你只會看到名稱，不會看到值。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

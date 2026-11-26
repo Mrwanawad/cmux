@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.pendingHelp" : {
+      "comment" : "Settings > Cloud > Vault: this Mac waits for an approve; the 8-digit code follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve this Mac on another device that shows this code:"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق على جهاز Mac هذا من جهاز آخر يعرض هذا الرمز:"
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odobri ovaj Mac na drugom uređaju koji prikazuje kod:"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Godkend Mac'en på en anden enhed, der viser koden:"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestätige den Mac auf einem anderen Gerät mit diesem Code:"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprueba este Mac en otro dispositivo con este código:"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approuvez ce Mac sur un autre appareil affichant ce code :"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva il Mac su un altro dispositivo con questo codice:"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このコードが表示されている別のデバイスでこの Mac を承認："
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "យល់ព្រម Mac នេះលើឧបករណ៍ផ្សេងដែលបង្ហាញកូដនេះ៖"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 코드가 표시된 다른 기기에서 이 Mac을 승인하세요:"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Godkjenn denne Macen på en annen enhet som viser koden:"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatwierdź ten Mac na innym urządzeniu z tym kodem:"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprove este Mac em outro dispositivo com este código:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Одобрите этот Mac на другом устройстве с этим кодом:"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "อนุมัติ Mac เครื่องนี้บนอุปกรณ์อื่นที่แสดงรหัสนี้:"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu Mac'i bu kodu gösteren başka bir cihazda onayla:"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Схваліть цей Mac на іншому пристрої з цим кодом:"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phê duyệt máy Mac này trên thiết bị khác hiển thị mã này:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在显示此代码的另一台设备上批准这台 Mac："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在顯示此代碼的另一台裝置上核准這台 Mac："
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

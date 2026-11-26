@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.approveBody" : {
+      "comment" : "Settings > Cloud > Vault: the approve check, under the waiting device's code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve only if the device shows these 8 digits."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق فقط إذا عرض الجهاز هذه الأرقام الثمانية."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odobri samo ako uređaj prikazuje ovih 8 cifara."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Godkend kun, hvis enheden viser disse 8 cifre."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur bestätigen, wenn das Gerät diese 8 Ziffern zeigt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprueba solo si el dispositivo muestra estos 8 dígitos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "N'approuvez que si l'appareil affiche ces 8 chiffres."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva solo se il dispositivo mostra queste 8 cifre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デバイスにこの8桁が表示されている場合のみ承認してください。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "យល់ព្រមតែពេលឧបករណ៍បង្ហាញលេខ 8 ខ្ទង់នេះ។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기에 이 8자리 숫자가 표시될 때만 승인하세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Godkjenn bare hvis enheten viser disse 8 sifrene."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatwierdź tylko, jeśli urządzenie pokazuje te 8 cyfr."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprove só se o dispositivo mostrar estes 8 dígitos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Одобряйте, только если устройство показывает эти 8 цифр."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "อนุมัติเฉพาะเมื่ออุปกรณ์แสดงตัวเลข 8 หลักนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yalnızca cihaz bu 8 rakamı gösteriyorsa onayla."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Схвалюйте, лише якщо пристрій показує ці 8 цифр."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ phê duyệt nếu thiết bị hiển thị 8 chữ số này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅当设备显示这 8 位数字时才批准。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅在裝置顯示這 8 位數字時才核准。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

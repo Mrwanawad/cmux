@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.removeBody" : {
+      "comment" : "Settings > Cloud > Vault: what removing a secret does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Cloud machines stop getting it at their next sync."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتوقف أجهزة Cloud عن تلقيه عند المزامنة التالية."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloud mašine ga više ne dobijaju od iduće sinhronizacije."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dine Cloud-maskiner får den ikke længere ved næste synk."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloud-Rechner erhalten es ab dem nächsten Sync nicht mehr."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus máquinas Cloud dejarán de recibirlo al sincronizar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos machines Cloud le perdent à la prochaine synchro."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le macchine Cloud non lo ricevono più dal prossimo sync."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次回の同期から Cloud マシンに届かなくなります。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ម៉ាស៊ីន Cloud ឈប់ទទួលវានៅសមកាលកម្មបន្ទាប់។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 동기화부터 Cloud 머신에 전달되지 않습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloud-maskinene dine slutter å få den ved neste synk."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maszyny Cloud nie dostaną go od następnej synchronizacji."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suas máquinas Cloud param de recebê-lo no próximo sync."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Машины Cloud не получат его со следующей синхронизации."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เครื่อง Cloud จะหยุดได้รับในการซิงค์ครั้งถัดไป"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloud makinelerin bir sonraki eşzamanlamada artık almaz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Машини Cloud не отримають його з наступної синхронізації."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máy Cloud của bạn sẽ ngừng nhận ở lần đồng bộ tiếp theo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的 Cloud 机器将在下次同步时不再获取它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的 Cloud 機器將在下次同步時不再取得它。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settings.cloud.vault.enabled.help" : {
+      "comment" : "Settings row help for the cmux vault setting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your secrets and env values, sealed to your devices and Cloud machines; the server can't read them. On adds this Mac; off stops syncing here and deletes nothing."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسرارك وقيم البيئة، مختومة لأجهزتك وأجهزة Cloud؛ لا يستطيع الخادم قراءتها. التشغيل يضيف هذا الـ Mac، والإيقاف يوقف المزامنة هنا دون حذف أي شيء."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaše tajne i env vrijednosti, zaključane za vaše uređaje i Cloud mašine; server ih ne može pročitati. Uključivanje dodaje ovaj Mac; isključivanje zaustavlja sinhronizaciju ovdje i ništa ne briše."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dine hemmeligheder og env-værdier, forseglet til dine enheder og Cloud-maskiner; serveren kan ikke læse dem. Til tilføjer denne Mac; fra stopper synkronisering her og sletter intet."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Geheimnisse und Umgebungswerte, versiegelt für deine Geräte und Cloud-Maschinen; der Server kann sie nicht lesen. Ein fügt diesen Mac hinzu; Aus beendet die Synchronisierung hier und löscht nichts."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus secretos y valores de entorno, sellados para tus dispositivos y máquinas de Cloud; el servidor no puede leerlos. Activado añade este Mac; desactivado detiene la sincronización aquí y no borra nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos secrets et variables d’environnement, scellés pour vos appareils et machines Cloud ; le serveur ne peut pas les lire. Activé ajoute ce Mac ; désactivé arrête la synchronisation ici sans rien supprimer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi segreti e valori env, sigillati per i tuoi dispositivi e le macchine Cloud; il server non può leggerli. Se attivata, aggiunge questo Mac; se disattivata, interrompe la sincronizzazione qui senza eliminare nulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シークレットと環境変数の値をデバイスと Cloud マシン向けに封印し、サーバーは読めません。オンでこの Mac を追加し、オフでここでの同期を停止します。何も削除しません。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "អាថ៌កំបាំង និងតម្លៃ env របស់អ្នក ត្រូវបានបិទជិតសម្រាប់ឧបករណ៍ និងម៉ាស៊ីន Cloud របស់អ្នក ម៉ាស៊ីនមេមិនអាចអានវាបានទេ។ បើកនឹងបន្ថែម Mac នេះ បិទនឹងឈប់ធ្វើសមកាលកម្មនៅទីនេះ ហើយមិនលុបអ្វីទេ។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀과 환경 변수 값을 내 기기와 Cloud 머신용으로 봉인하며 서버는 읽을 수 없습니다. 켜면 이 Mac을 추가하고, 끄면 여기서 동기화를 멈추며 아무것도 삭제하지 않습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hemmelighetene og env-verdiene dine, forseglet til enhetene og Cloud-maskinene dine; serveren kan ikke lese dem. På legger til denne Macen; av stopper synkronisering her og sletter ingenting."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twoje sekrety i wartości env, zapieczętowane dla Twoich urządzeń i maszyn Cloud; serwer nie może ich odczytać. Włączenie dodaje ten Mac; wyłączenie zatrzymuje tu synchronizację i niczego nie usuwa."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus segredos e valores de env, selados para seus dispositivos e máquinas do Cloud; o servidor não consegue lê-los. Ativado adiciona este Mac; desativado para de sincronizar aqui e não apaga nada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваши секреты и значения env, запечатанные для ваших устройств и машин Cloud; сервер не может их прочитать. Включение добавляет этот Mac; выключение останавливает синхронизацию здесь и ничего не удаляет."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ข้อมูลลับและค่า env ของคุณ ปิดผนึกไว้สำหรับอุปกรณ์และเครื่อง Cloud ของคุณ เซิร์ฟเวอร์อ่านไม่ได้ เปิดเพื่อเพิ่ม Mac เครื่องนี้ ปิดเพื่อหยุดซิงค์ที่นี่โดยไม่ลบสิ่งใด"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gizli bilgileriniz ve env değerleriniz, aygıtlarınıza ve Cloud makinelerinize mühürlü; sunucu bunları okuyamaz. Açmak bu Mac'i ekler; kapatmak burada eşzamanlamayı durdurur ve hiçbir şeyi silmez."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваші секрети та значення env, запечатані для ваших пристроїв і машин Cloud; сервер не може їх прочитати. Увімкнення додає цей Mac; вимкнення зупиняє синхронізацію тут і нічого не видаляє."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bí mật và giá trị env của bạn, được niêm phong cho các thiết bị và máy Cloud của bạn; máy chủ không thể đọc chúng. Bật sẽ thêm máy Mac này; tắt sẽ ngừng đồng bộ tại đây và không xóa gì."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的机密和环境变量值，只为你的设备和 Cloud 机器加密封存；服务器无法读取。打开会加入这台 Mac；关闭会停止在此同步，不删除任何内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的機密與環境變數值，只為你的裝置與 Cloud 機器加密封存；伺服器無法讀取。開啟會加入這台 Mac；關閉會停止在此同步，不刪除任何內容。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

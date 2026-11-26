@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.empty" : {
+      "comment" : "Settings > Cloud > Vault: the vault keeps nothing yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing kept yet. Add a secret or import a .env file."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء محفوظ بعد. أضف سرًا أو استورد ملف .env."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Još ništa. Dodaj tajnu ili uvezi .env datoteku."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intet endnu. Tilføj en hemmelighed, eller importér .env."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch leer. Füge ein Geheimnis hinzu oder importiere .env."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay nada. Añade un secreto o importa un .env."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vide. Ajoutez un secret ou importez un fichier .env."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora niente. Aggiungi un segreto o importa un file .env."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ何もありません。シークレットを追加するか .env を読み込んでください。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "មិនទាន់មានអ្វីទេ។ បន្ថែមអាថ៌កំបាំង ឬនាំចូល .env។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 없습니다. 비밀을 추가하거나 .env 파일을 가져오세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomt. Legg til en hemmelighet eller importer en .env-fil."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na razie pusto. Dodaj sekret lub zaimportuj plik .env."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada ainda. Adicione um segredo ou importe um .env."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пока пусто. Добавьте секрет или импортируйте файл .env."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยังไม่มีอะไร เพิ่มความลับหรือนำเข้าไฟล์ .env"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Henüz boş. Bir sır ekle veya bir .env dosyası içe aktar."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поки порожньо. Додайте секрет або імпортуйте файл .env."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có gì. Thêm bí mật hoặc nhập tệp .env."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有内容。添加机密或导入 .env 文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無內容。新增機密或匯入 .env 檔案。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

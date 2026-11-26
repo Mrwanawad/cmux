@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.offHelp" : {
+      "comment" : "Settings > Cloud > Vault: the off state's line, beside Turn On.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep secrets here and sync them to your machines."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ الأسرار هنا وزامنها مع أجهزتك."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Čuvaj tajne ovdje i sinhronizuj ih na svoje mašine."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gem hemmeligheder her og synk dem til dine maskiner."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichere Geheimnisse hier und sync sie auf deine Rechner."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda secretos aquí y sincronízalos con tus máquinas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gardez vos secrets ici, synchronisés sur vos machines."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conserva i segreti qui e sincronizzali sulle tue macchine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シークレットをここに保管し、マシンに同期します。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "រក្សាអាថ៌កំបាំងនៅទីនេះ ហើយធ្វើសមកាលកម្មទៅម៉ាស៊ីនអ្នក។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀을 여기에 보관하고 내 머신에 동기화하세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre hemmeligheter her og synk dem til maskinene dine."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przechowuj tu sekrety i synchronizuj je na swoje maszyny."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarde segredos aqui e sincronize com suas máquinas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Храните секреты здесь и синхронизируйте их с машинами."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เก็บความลับไว้ที่นี่และซิงค์ไปยังเครื่องของคุณ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sırlarını burada sakla ve makinelerine eşzamanla."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зберігайте секрети тут і синхронізуйте їх із машинами."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu bí mật ở đây và đồng bộ đến các máy của bạn."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将机密保存在这里，并同步到你的机器。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將機密存放在這裡，並同步到你的機器。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

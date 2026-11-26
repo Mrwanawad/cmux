@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.lead" : {
+      "comment" : "Settings > Cloud > Vault: one line under the title on what the vault is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secrets sealed to your devices. Cloud can't read them."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسرار مختومة لأجهزتك. لا يمكن لـ Cloud قراءتها."
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tajne zaključane za tvoje uređaje. Cloud ih ne vidi."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hemmeligheder kun for dine enheder. Cloud kan ikke se dem."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für deine Geräte versiegelt. Cloud kann sie nicht lesen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secretos sellados a tus dispositivos. Cloud no los lee."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secrets scellés pour vos appareils. Illisibles par Cloud."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segreti sigillati per i tuoi device. Cloud non li legge."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "シークレットはあなたのデバイスだけが開けます。Cloud は読めません。"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "អាថ៌កំបាំងសម្រាប់តែឧបករណ៍អ្នក។ Cloud អានមិនបាន។"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀은 내 기기에서만 열립니다. Cloud는 읽을 수 없습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hemmeligheter kun for dine enheter. Cloud ser dem ikke."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sekrety tylko dla Twoich urządzeń. Cloud ich nie odczyta."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segredos selados aos seus dispositivos. O Cloud não os lê."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Секреты доступны только вашим устройствам, не Cloud."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ความลับถูกผนึกไว้กับอุปกรณ์ของคุณ Cloud อ่านไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sırlar cihazlarına mühürlü. Cloud bunları okuyamaz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Секрети доступні лише вашим пристроям, не Cloud."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bí mật chỉ thiết bị của bạn mở được. Cloud không đọc được."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "机密仅对你的设备开放。Cloud 无法读取。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "機密僅對你的裝置開放。Cloud 無法讀取。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

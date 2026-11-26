@@ -1,0 +1,138 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settingsPage.vault.importRefused" : {
+      "comment" : "Settings > Cloud > Vault: a name in the file the vault does not keep.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not kept: cmux or the shell owns this name"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محفوظ: cmux أو الصدفة يملك هذا الاسم"
+          }
+        },
+        "bs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nije sačuvano: ovo ime pripada cmux-u ili shellu"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ikke gemt: cmux eller shellen ejer dette navn"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nicht gespeichert: Name gehört cmux oder der Shell"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no guardado: este nombre es de cmux o de la shell"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "non conservé : ce nom appartient à cmux ou au shell"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "non salvato: il nome appartiene a cmux o alla shell"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存されません: cmux またはシェルが使う名前です"
+          }
+        },
+        "km" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "មិនរក្សាទុក៖ ឈ្មោះនេះជារបស់ cmux ឬ shell"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장 안 됨: cmux 또는 셸이 사용하는 이름"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ikke lagret: cmux eller skallet eier dette navnet"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nie zapisano: ta nazwa należy do cmux lub powłoki"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "não guardado: este nome é do cmux ou do shell"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "не сохранено: это имя принадлежит cmux или оболочке"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่ได้เก็บ: ชื่อนี้เป็นของ cmux หรือเชลล์"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "saklanmadı: bu ad cmux'a veya kabuğa ait"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "не збережено: це ім'я належить cmux або оболонці"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không lưu: tên này thuộc về cmux hoặc shell"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未保存：此名称属于 cmux 或 shell"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未保存：此名稱屬於 cmux 或 shell"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
