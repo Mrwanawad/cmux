@@ -44,9 +44,19 @@ mi_arms=(
 )
 started_at=$SECONDS
 root="$(git rev-parse --show-toplevel)"
-command -v cargo >/dev/null || "$root/scripts/install-rust-ci.sh"
-# cmux-tui links libghostty-vt: a pool checkout can come without the submodule.
-(cd "$root" && { [ -f ghostty-next/build.zig ] || [ -n "${CMUX_GHOSTTY_SRC:-}" ] || git submodule update --init --depth 1 ghostty-next; })
+# A bare runner, as infinite-items-linux.sh sets it up: the ghostty-next submodule (a fast-checks snapshot leaves it
+# empty), the pinned Rust and Zig and the native build tools.
+cd "$root"
+[ -f ghostty-next/build.zig ] || [ -n "${CMUX_GHOSTTY_SRC:-}" ] || git submodule update --init --depth 1 ghostty-next
+command -v cargo >/dev/null || ./scripts/install-rust-ci.sh
+if ! command -v zig >/dev/null && [ -z "${ZIG:-}${CMUX_ZIG:-}" ]; then
+  zig_env="$(mktemp)"
+  GHOSTTY_ZIG_SOURCE=ghostty-next GITHUB_ENV="$zig_env" GITHUB_PATH=/dev/null ./scripts/install-zig-ci.sh
+  zig_line="$(grep '^CMUX_ZIG=' "$zig_env" | tail -n 1 || true)"
+  rm -f "$zig_env"
+  [ -z "$zig_line" ] || export "$zig_line"
+fi
+command -v clang >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq clang libclang-dev pkg-config; }
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
 export CARGO_TARGET_DIR="${RUNNER_TEMP:-/tmp}/alloc-musl-ab-target"
