@@ -374,6 +374,7 @@ mod startup;
 #[cfg(test)]
 mod startup_wait_tests;
 mod steer_end;
+mod urgent_steer;
 #[cfg(test)]
 mod steer_on_start_tests;
 pub(crate) mod stop_condition;
