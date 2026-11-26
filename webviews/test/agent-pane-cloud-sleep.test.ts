@@ -16,6 +16,10 @@ import {
   nextRetryDelay,
   RETRY_FIRST_MS,
 } from "../src/agent-session/acpmux/hostRetry";
+import { cloudSendWakes } from "../src/agent-session/acpmux/cloudWake";
+import type { AcpmuxSnapshot } from "../src/agent-session/acpmux/model";
+import { withWakingPrompts } from "../src/agent-session/acpmux/startingSends";
+import { heldQueueRows, wakingStartingSends, type TrustHeldPrompt } from "../src/agent-session/acpmux/trustHeld";
 
 const HOUR_MS = 3_600_000;
 /// The pane's handshake to a paused Cloud machine: the app has no link to it.
@@ -101,4 +105,41 @@ test("a send wakes the machine the app reads paused, and its wake asks the pane 
   expect(cloudWakeAsksAgain({ wasAsleep: true, asleep: false, connected: true })).toBe(false);
   expect(cloudWakeAsksAgain({ wasAsleep: false, asleep: false, connected: false })).toBe(false);
   expect(cloudWakeAsksAgain({ wasAsleep: false, asleep: true, connected: false })).toBe(false);
+});
+
+// Enter with a message on a paused Cloud chat resumes the machine on its own, no Resume click: the
+// send wakes it (cloudWake.ts), also for a chat opened while its machine already slept, whose pane
+// has no Cloud identity from a handshake yet (the app's paused link names the machine).
+test("Enter on a paused Cloud chat wakes its machine, with or without a handshake identity", () => {
+  const resting = { chat: "chat-1", linkUp: false, paused: false, unavailable: false };
+  // Before: a chat with no handshake identity was not `cloud`, so Enter failed as a plain send.
+  expect(cloudSendWakes({ ...resting, cloud: false })).toBeUndefined();
+  // After: the paused link makes it a Cloud chat whose send wakes the machine.
+  expect(cloudSendWakes({ ...resting, cloud: cloudSleepingMachine(paused) !== undefined })).toBe("chat-1");
+  expect(cloudSendWakes({ ...resting, cloud: true, paused: true })).toBe("chat-1");
+  // A chat whose link is up sends as usual.
+  expect(cloudSendWakes({ ...resting, cloud: true, linkUp: true })).toBeUndefined();
+});
+
+// The prompt a waking machine holds is the transcript's row from the send, as any sent prompt is,
+// never a "Waking the machine…" box stacked on the composer.
+test("a prompt held for a waking machine draws in the transcript, not on the composer", () => {
+  const held: TrustHeldPrompt[] = [
+    { id: "p1", chat: "chat-1", cwd: "/w", text: "hello", attachments: [], ticket: Promise.resolve(undefined), waking: true, at: 5 },
+    { id: "p2", chat: "chat-1", cwd: "/w", text: "trust", attachments: [], ticket: Promise.resolve(undefined) },
+    { id: "p3", chat: "chat-2", cwd: "/w", text: "other", attachments: [], ticket: Promise.resolve(undefined), waking: true },
+  ];
+  const waking = wakingStartingSends(held, "chat-1", "/w");
+  expect(waking.map((send) => send.id)).toEqual(["p1"]);
+  const base = { rows: [{ id: "r0", kind: "assistant", text: "earlier", version: 0 }] } as unknown as AcpmuxSnapshot;
+  const drawn = withWakingPrompts(base, waking);
+  const row = drawn.rows.at(-1)!;
+  expect(row).toMatchObject({ id: "local-p1", kind: "user", text: "hello", pending: true });
+  // Once the chat's client draws that prompt's own row (the same id), it is drawn once.
+  const sent = { rows: [...base.rows, { id: "local-p1", kind: "user", text: "hello", version: 1 }] } as unknown as AcpmuxSnapshot;
+  expect(withWakingPrompts(sent, waking)).toBe(sent);
+  // Nothing waking: the same snapshot.
+  expect(withWakingPrompts(base, [])).toBe(base);
+  // The composer's queue keeps only the prompts the folder's trust holds.
+  expect(heldQueueRows(held, "chat-1", "/w").filter((entry) => !entry.waking).map((entry) => entry.id)).toEqual(["p2"]);
 });

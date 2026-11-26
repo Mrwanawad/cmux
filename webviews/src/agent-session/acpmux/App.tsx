@@ -262,7 +262,14 @@ import {
 } from "./autoWhereModel";
 import { usePeerCloudMachine } from "./peerCloudMachine";
 import { inThisVisit, useFolderTrustAsk, visitOf } from "./useFolderTrustAsk";
-import { movedOn, sentIn as sentInHeld, useTrustHeldPrompts, whereHeldGoes, type TrustHeldPrompt } from "./trustHeld";
+import {
+  movedOn,
+  sentIn as sentInHeld,
+  useTrustHeldPrompts,
+  wakingStartingSends,
+  whereHeldGoes,
+  type TrustHeldPrompt,
+} from "./trustHeld";
 import { type SendGesture } from "./heldPrompt";
 import {
   StartingSends,
@@ -270,6 +277,7 @@ import {
   startingQueueEntry,
   queuedStartingSends,
   withStartingPrompt,
+  withWakingPrompts,
   startingIn,
 } from "./startingSends";
 import { FILE_SEARCH_LIMIT, type FileSearchSource } from "./fileSearchModel";
@@ -1396,6 +1404,9 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   /// first is the chat's first row from the send, those after it queued rows. One refused comes back
   /// to the composer with those behind it.
   const [startingRows, setStartingRows] = useState<readonly StartingSend[]>([]);
+  /// The shown chat's prompts waiting for its Cloud machine to wake (trustHeld.ts `wakingSends`), as
+  /// transcript rows (startingSends.ts `withWakingPrompts`); set from the hold below.
+  const [wakingSends, setWakingSends] = useState<readonly StartingSend[]>([]);
   // Only the chat they were sent in draws them (startingSends.ts `startingIn`). The client's visit
   // moves with its snapshot's chat, so the snapshot names when to read it again.
   const shownStarting = useMemo(
@@ -1412,16 +1423,19 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   const snapshot = useMemo(
     () =>
       liveAsk(
-        withStartingPrompt(
-          applySwitch(
-            catalog === clientSnapshot.catalog ? clientSnapshot : { ...clientSnapshot, catalog },
-            switchView,
-            catalog,
+        withWakingPrompts(
+          withStartingPrompt(
+            applySwitch(
+              catalog === clientSnapshot.catalog ? clientSnapshot : { ...clientSnapshot, catalog },
+              switchView,
+              catalog,
+            ),
+            shownStarting,
           ),
-          shownStarting,
+          wakingSends,
         ),
       ),
-    [clientSnapshot, switchView, catalog, shownStarting],
+    [clientSnapshot, switchView, catalog, shownStarting, wakingSends],
   );
   // The dialog belongs to the chat it opened on: switching chats closes it.
   const [shareChat, setShareChat] = useState(snapshot.sessionId);
@@ -6696,6 +6710,12 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   // The wake ends once no prompt waits for it; one that failed (or found the machine deleted) gives
   // its prompts back to the composer, as a failed send does.
   const wakingHeld = trustHeld.wakingAny();
+  const heldAll = trustHeld.all;
+  const heldWakingSends = useMemo(
+    () => wakingStartingSends(heldAll, snapshot.sessionId ?? snapshot.missingSession, trustHeldCwd),
+    [heldAll, snapshot.sessionId, snapshot.missingSession, trustHeldCwd],
+  );
+  useEffect(() => setWakingSends(heldWakingSends), [heldWakingSends]);
   useEffect(() => {
     if (!wakingHeld) setCloudWaking(false);
   }, [wakingHeld]);
@@ -7368,8 +7388,11 @@ function AcpmuxPane({ initialChat }: { initialChat?: InitialChat }) {
   const stopThroughReconnect = useStopThroughReconnect(snapshot, cancelTurn);
   const keptStopping = stopThroughReconnect.stopping;
   // A chat not listed yet (its machine wakes) shows the prompts held for it under its recorded id.
-  const heldRows =
+  // Not the prompts a waking Cloud machine holds: the transcript draws those (`withWakingPrompts`), so
+  // nothing stacks on the composer while the machine resumes (cmux#57136).
+  const heldRowsAll =
     !snapshot.sessionId && snapshot.missingSession ? trustHeld.rowsIn(snapshot.missingSession) : trustHeld.rows;
+  const heldRows = useMemo(() => heldRowsAll.filter((row) => !row.waking), [heldRowsAll]);
   /// Sends a prompt the folder's trust held, with its own send's ticket, in the chat it was sent in:
   /// settles with the session acpmux took it in (a new chat's, once its start made it), or rejects
   /// with its refusal; a refusal is the hold's to handle (trustHeld.ts).
