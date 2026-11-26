@@ -6,7 +6,8 @@ public import Foundation
 /// gesture), so it asked to open cmux in cmux, or handed it to whichever build macOS picked, and the tab stayed on
 /// the console page. The app sets ``handle``: a link it answers is finished in this process, and the tab that only
 /// ever showed GitHub and the console closes, back to the chat.
-@MainActor public enum BrowserAppLinks {
+@MainActor public struct BrowserAppLinks {
+    public init() {}
     /// What the app does with a URL a tab reached: `.finished` (handled; the navigation is cancelled), `.seen`
     /// (the app took note, the page loads as usual), or `.ignored`.
     public enum Answer: Equatable, Sendable { case finished, seen, ignored }
