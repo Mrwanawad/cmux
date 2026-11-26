@@ -259,6 +259,9 @@ public final class CEFTab: BrowserTab, BrowserOcclusionHosting, BrowserExtension
     /// URL of the last main-frame load that committed (Chromium's current
     /// entry). Renderer debug URLs (chrome://crash) never commit.
     @ObservationIgnored var committedURL: URL?
+    /// Every main-frame document this tab committed was a connect page (``BrowserAppLinks/onlyConnectPages(_:)``),
+    /// so the completion link that ends the round trip closes it (#55104).
+    @ObservationIgnored var committedOnlyConnectPages = true
     /// Chromium's own Back/Forward state; the tab also offers the entries
     /// saved before a relaunch (`restored`).
     @ObservationIgnored var nativeHistory = (back: false, forward: false)

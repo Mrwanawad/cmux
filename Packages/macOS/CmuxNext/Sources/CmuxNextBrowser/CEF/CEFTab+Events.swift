@@ -56,6 +56,10 @@ extension CEFTab {
             if let title = titleBeforeCommit { machine.apply(.titleChanged(title)) }
             clearTitleBeforeCommit()
             committedURL = URL(string: url)
+            if let committedURL {
+                committedOnlyConnectPages = committedOnlyConnectPages && BrowserAppLinks.onlyConnectPages([committedURL])
+                _ = BrowserAppLinks.answer(committedURL) // the console's GitHub-saved page: the app reads GitHub again (#55104)
+            }
             // A new document: the one before is gone. Its own first paint may have come first, if this is the load's first commit.
             (documentLoaded, documentPainted, committedIsErrorPage) = (false, paintBeforeCommit && !committedThisLoad, false)
             (paintBeforeCommit, committedThisLoad) = (false, true)
@@ -135,7 +139,14 @@ extension CEFTab {
             emit(.close)
         case .navigationReroute(_, let url, _): if let url = URL(string: url) { emit(.rerouteStore(url)) }
         case .localFileHandoff(_, let url): if let url = URL(string: url) { emit(.openLocalFile(url)) }
-        case .externalURL(_, let url, let userGesture): if let url = URL(string: url) { BrowserExternalApps.shared.open(url, from: committedURL, engine: engineKind, userGesture: userGesture, ask: enqueuePrompt) }
+        case .externalURL(_, let url, let userGesture):
+            guard let url = URL(string: url) else { break }
+            // This build's own GitHub completion link (BrowserAppLinks, #55104): finished here, never the external-app prompt.
+            if BrowserAppLinks.answer(url) == .finished {
+                if committedOnlyConnectPages { emit(.close) }
+                break
+            }
+            BrowserExternalApps.shared.open(url, from: committedURL, engine: engineKind, userGesture: userGesture, ask: enqueuePrompt)
         case .keyUnhandled(_, let keyCode, let shift):
             if keyCode == 0x1B {
                 emit(.unhandledEscape)
