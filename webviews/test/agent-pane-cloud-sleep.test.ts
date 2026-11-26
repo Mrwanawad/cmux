@@ -19,6 +19,7 @@ import {
 import { cloudSendWakes } from "../src/agent-session/acpmux/cloudWake";
 import type { AcpmuxSnapshot } from "../src/agent-session/acpmux/model";
 import { withWakingPrompts } from "../src/agent-session/acpmux/startingSends";
+import { pendingLabel } from "../src/agent-session/acpmux/conversation/PromptDelivery";
 import { heldQueueRows, wakingStartingSends, type TrustHeldPrompt } from "../src/agent-session/acpmux/trustHeld";
 
 const HOUR_MS = 3_600_000;
@@ -125,9 +126,26 @@ test("Enter on a paused Cloud chat wakes its machine, with or without a handshak
 // never a "Waking the machine…" box stacked on the composer.
 test("a prompt held for a waking machine draws in the transcript, not on the composer", () => {
   const held: TrustHeldPrompt[] = [
-    { id: "p1", chat: "chat-1", cwd: "/w", text: "hello", attachments: [], ticket: Promise.resolve(undefined), waking: true, at: 5 },
+    {
+      id: "p1",
+      chat: "chat-1",
+      cwd: "/w",
+      text: "hello",
+      attachments: [],
+      ticket: Promise.resolve(undefined),
+      waking: true,
+      at: 5,
+    },
     { id: "p2", chat: "chat-1", cwd: "/w", text: "trust", attachments: [], ticket: Promise.resolve(undefined) },
-    { id: "p3", chat: "chat-2", cwd: "/w", text: "other", attachments: [], ticket: Promise.resolve(undefined), waking: true },
+    {
+      id: "p3",
+      chat: "chat-2",
+      cwd: "/w",
+      text: "other",
+      attachments: [],
+      ticket: Promise.resolve(undefined),
+      waking: true,
+    },
   ];
   const waking = wakingStartingSends(held, "chat-1", "/w");
   expect(waking.map((send) => send.id)).toEqual(["p1"]);
@@ -135,11 +153,20 @@ test("a prompt held for a waking machine draws in the transcript, not on the com
   const drawn = withWakingPrompts(base, waking);
   const row = drawn.rows.at(-1)!;
   expect(row).toMatchObject({ id: "local-p1", kind: "user", text: "hello", pending: true });
+  // Its own small status on the message, at once: "Waking the machine…", not a box on the composer.
+  expect(row.delivery).toMatchObject({ state: "sending", promptId: "p1", waitingForMachine: true });
+  expect(pendingLabel(row.delivery!)).toBe("composer.heldForWake");
   // Once the chat's client draws that prompt's own row (the same id), it is drawn once.
-  const sent = { rows: [...base.rows, { id: "local-p1", kind: "user", text: "hello", version: 1 }] } as unknown as AcpmuxSnapshot;
+  const sent = {
+    rows: [...base.rows, { id: "local-p1", kind: "user", text: "hello", version: 1 }],
+  } as unknown as AcpmuxSnapshot;
   expect(withWakingPrompts(sent, waking)).toBe(sent);
   // Nothing waking: the same snapshot.
   expect(withWakingPrompts(base, [])).toBe(base);
   // The composer's queue keeps only the prompts the folder's trust holds.
-  expect(heldQueueRows(held, "chat-1", "/w").filter((entry) => !entry.waking).map((entry) => entry.id)).toEqual(["p2"]);
+  expect(
+    heldQueueRows(held, "chat-1", "/w")
+      .filter((entry) => !entry.waking)
+      .map((entry) => entry.id),
+  ).toEqual(["p2"]);
 });

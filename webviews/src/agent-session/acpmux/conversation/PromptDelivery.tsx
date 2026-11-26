@@ -28,6 +28,7 @@ const HOP_LABEL = {
 
 /// What a prompt still on its way says: the one sentence its footer shows.
 export function pendingLabel(delivery: PromptDelivery): StringKey {
+  if (delivery.waitingForMachine) return "composer.heldForWake";
   return delivery.waitingForHost ? "prompt.delivery.whenReady" : "prompt.delivery.sending";
 }
 
@@ -46,7 +47,7 @@ export function usePendingShown(delivery: PromptDelivery | undefined, queued = f
     const timer = setTimeout(() => setLate(true), Math.max(0, PENDING_AFTER_MS - (Date.now() - sentAt)));
     return () => clearTimeout(timer);
   }, [sending, late, sentAt]);
-  if (delivery?.waitingForHost === true) return sending;
+  if (delivery?.waitingForHost === true || delivery?.waitingForMachine === true) return sending;
   return sending && late && !queued;
 }
 

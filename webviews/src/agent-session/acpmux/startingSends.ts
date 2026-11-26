@@ -203,7 +203,19 @@ export function withStartingPrompt(raw: AcpmuxSnapshot, starting: readonly Start
 export function withWakingPrompts(raw: AcpmuxSnapshot, waking: readonly StartingSend[]): AcpmuxSnapshot {
   if (!waking.length) return raw;
   const drawn = new Set(raw.rows.map((row) => row.id));
-  const added = waking.filter((send) => !drawn.has(`local-${send.id}`)).map(startingRow);
+  const added = waking
+    .filter((send) => !drawn.has(`local-${send.id}`))
+    .map((send) => ({
+      ...startingRow(send),
+      // Its own small status, at once: the machine wakes for it (PromptDelivery.tsx `pendingLabel`).
+      delivery: {
+        state: "sending" as const,
+        promptId: send.id,
+        sessionId: send.sentIn.chat ?? "",
+        sentAt: send.at,
+        waitingForMachine: true,
+      },
+    }));
   return added.length ? { ...raw, rows: [...raw.rows, ...added] } : raw;
 }
 
