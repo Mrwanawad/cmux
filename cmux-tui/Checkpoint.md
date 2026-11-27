@@ -2,10 +2,12 @@
 
 **Version: 0.6.0** (2026-11-27)
 
-Branch `windows-wsl`, nothing committed. Every change below is local to
-`cmux-tui/` plus one user setting. The running cmux uses
+Branch `windows-wsl`, pushed to the fork `Mrwanawad/cmux` (remote `fork`,
+public, forked from `manaflow-ai/cmux`, where this account cannot push).
+`origin` stays the upstream for syncing. The running cmux uses
 `target/release/cmux-tui`; to load a new build, close the cmux window and run
-`cmux` again (the background daemon keeps the sessions).
+`cmux` again (the background daemon keeps the sessions). Outside the repo,
+`~/.claude/settings.json` in WSL has `"remoteControlAtStartup": true`.
 
 ## Build and test
 
@@ -162,4 +164,5 @@ Branch `windows-wsl`, nothing committed. Every change below is local to
 ## Next steps
 - Look at it live: open 4-5 Claude panes, check deck spacing, chip names
   and toy visits across panes.
-- Commit when the user asks.
+- Open a PR upstream from `Mrwanawad/cmux:windows-wsl` if the user wants
+  it in manaflow-ai/cmux.
