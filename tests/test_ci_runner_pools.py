@@ -517,9 +517,9 @@ class Evidence(unittest.TestCase):
                 self.assertNotIn(gcp, dead)
                 value, _ = runner_pools.reconcile(fresh, pools, dead_now=dead, served_now=started, now=NOW,
                                                   covered=runner_pools.evidence_covers(None, snapshot, pools, now=NOW))
-                for name in FREESTYLE_LED:
-                    self.assertEqual(value[name], gcp if moves else rung, name)
-                for name in GCP_LED:
+                # Since #59644 GCP leads every pool Freestyle backs, so a stalled Freestyle rung moves none of them
+                # off GCP; the rung itself is still marked dead past the 2 min cutoff (above).
+                for name in ("linux", "linux_2", "linux_8", "linux_16", "linux_32"):
                     self.assertEqual(value[name], gcp, name)
         self.assertFalse(runner_pools.owned_stalled(rung, 0, 30))
         self.assertFalse(runner_pools.owned_stalled(gcp, 3, runner_pools.simple_pool_picker.BLACKSMITH_STALL_MINUTES - 1))
