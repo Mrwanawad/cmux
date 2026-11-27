@@ -1983,6 +1983,37 @@ class BuildRescueToBlacksmith(unittest.TestCase):
         m = self.rescue_module
         self.assertEqual(self.watch("pr-rescue", [[]]), (m.WAIT, []))
 
+    def test_a_refused_read_ends_the_watch_instead_of_holding_the_runner_blind(self):
+        # 2026-11-26: 65 of 76 watches read 403 on every poll and held a runner 28 min each, rescuing nothing.
+        import urllib.error
+        m = self.rescue_module
+        for code in (403, 429):
+            gets, sleeps = [], []
+
+            def api(method, path, token, body=None):
+                gets.append(method)
+                raise urllib.error.HTTPError(path, code, "Forbidden", {}, None)
+
+            env = {"GITHUB_REPOSITORY": "manaflow-ai/cmux", "GITHUB_RUN_ID": "7", "GH_TOKEN": "t"}
+            verdict = m.watch(env, api=api, clock=lambda: 0.0, sleep=sleeps.append, out=lambda line: None)
+            self.assertEqual((verdict, gets, sleeps), (m.WAIT, ["GET"], []))
+
+    def test_a_server_error_is_read_again(self):
+        import urllib.error
+        m = self.rescue_module
+        calls, clock = [], [0.0]
+
+        def api(method, path, token, body=None):
+            calls.append(method)
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(path, 502, "Bad Gateway", {}, None)
+            return {"jobs": [{"name": m.BUILD_JOB, "status": "in_progress"}]}
+
+        env = {"GITHUB_REPOSITORY": "manaflow-ai/cmux", "GITHUB_RUN_ID": "7", "GH_TOKEN": "t"}
+        verdict = m.watch(env, api=api, clock=lambda: clock[0],
+                          sleep=lambda s: clock.__setitem__(0, clock[0] + s), out=lambda line: None)
+        self.assertEqual((verdict, calls), (m.DONE, ["GET", "GET"]))
+
 
 class BuildRescueNeverToAnOffOrDeadBlacksmith(unittest.TestCase):
     """2026-11-17: vars.CI_BLACKSMITH_MACOS was unset (off) and the Blacksmith macOS labels had 0 of 267 runners

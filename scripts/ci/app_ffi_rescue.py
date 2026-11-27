@@ -52,6 +52,7 @@ WORKFLOW_FILE = "app-ffi-release.yml"
 API = "https://api.github.com"
 
 WAIT, DONE, RESCUE = "wait", "done", "rescue"
+REFUSED = (401, 403, 404, 429)  # a read the API refused: polling again only holds the runner
 
 
 def build_job(jobs: list[Mapping[str, Any]]) -> Mapping[str, Any] | None:
@@ -133,6 +134,16 @@ def watch(env: Mapping[str, str], api: Callable[..., Any] = _api, clock: Callabl
         try:
             page = api("GET", f"repos/{repo}/actions/runs/{run}/attempts/{attempt}/jobs?per_page=100", token)
             jobs = list((page or {}).get("jobs") or [])
+        except urllib.error.HTTPError as error:
+            if error.code in REFUSED:
+                # 2026-11-26: 65 of 76 watches got 403 on every read (the repository's GITHUB_TOKEN budget, shared by
+                # every workflow, was spent) and held a runner 28 min on average, blind, rescuing nothing. A refused
+                # read is not a network blip: end the watch now and free the runner.
+                out(f"::warning::jobs read refused (HTTP {error.code}); this watch cannot see {BUILD_JOB}, so it "
+                    f"ends instead of holding a runner blind")
+                return WAIT
+            out(f"jobs unread ({type(error).__name__}: {error}); next read in {POLL_S:.0f} s")
+            jobs = None
         except (urllib.error.URLError, TimeoutError, ValueError) as error:
             out(f"jobs unread ({type(error).__name__}: {error}); next read in {POLL_S:.0f} s")
             jobs = None
@@ -170,6 +181,7 @@ def watch(env: Mapping[str, str], api: Callable[..., Any] = _api, clock: Callabl
 
 
 def main() -> int:
+    sys.stdout.reconfigure(line_buffering=True)  # each line at its own time in the job log
     watch(os.environ)
     return 0
 
