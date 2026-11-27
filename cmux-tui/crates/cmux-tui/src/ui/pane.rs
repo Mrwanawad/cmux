@@ -489,6 +489,12 @@ fn draw_tab_bar(app: &mut App, frame: &mut Frame, area: &PaneArea, focused: bool
                 width: area.rect.width,
                 height: crate::app::TOY_DECK_ROWS,
             },
+            body: Rect {
+                x: area.rect.x,
+                y: origin_y + 1,
+                width: area.rect.width,
+                height: (area.rect.y + area.rect.height).saturating_sub(origin_y + 1),
+            },
             surface: area.surface,
             status,
         });

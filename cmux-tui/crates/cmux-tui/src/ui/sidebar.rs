@@ -866,7 +866,16 @@ fn draw_toys(
     let agents: Vec<_> =
         app.sidebar_status.agents().iter().map(|row| (row.surface, row.status)).collect();
     let bg = palette.base.bg.unwrap_or(Color::Reset);
-    super::toy::draw_rail(&mut app.toy_rail, frame.buffer_mut(), area, &agents, bg, palette.dim);
+    let tools = app.toy_header.tools();
+    super::toy::draw_rail(
+        &mut app.toy_rail,
+        frame.buffer_mut(),
+        area,
+        &agents,
+        &tools,
+        bg,
+        palette.dim,
+    );
     app.sidebar_toy_visible |= super::toy::fits(area);
 }
 

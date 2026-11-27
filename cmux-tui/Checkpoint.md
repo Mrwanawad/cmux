@@ -1,6 +1,6 @@
 # Checkpoint: cmux-tui personal increments
 
-**Version: 0.6.0** (2026-11-27)
+**Version: 0.7.0** (2026-11-27)
 
 Branch `windows-wsl`, pushed to the fork `Mrwanawad/cmux` (remote `fork`,
 public, forked from `manaflow-ai/cmux`, where this account cannot push).
@@ -20,6 +20,33 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
   (a short zlib/struct script; no PIL on this machine).
 
 ## Version history
+
+### 0.7.0: small shaded Clawds with outfits, tools and more moves
+- The user found the flat pixel Clawds (half-block, 10x7, 20x14 on the rail,
+  3-row deck) "way too big and too vague". Rewritten in `toy.rs`:
+  - **Size:** 8x6 square half-cell pixels everywhere (rail too, no 2x);
+    the deck is back to 2 rows (`TOY_DECK_ROWS`).
+  - **3D shading:** lit top face (back corner rounded), shaded side face,
+    dark underside, far arm and far legs darker. Three views: 3/4 side,
+    front (idle, cheer) and back (spin).
+  - **Outfits** (`Outfit`, random per Clawd, new one mid-spin after every
+    nap and sometimes on a random spin): fedora with band, cap with bill,
+    beanie, headphones, crown, tennis headband; scarf with a flapping tail,
+    bow tie, gold chain; shades with a glint. Muted cloth colors (navy,
+    burgundy, bottle green, camel, stone, charcoal, oxford blue).
+  - **Tools** read from the agent screen (`⏺ Read(...)`, `⏺ Bash(...)`):
+    magnifier, pen, hard hat and hammer, bug net, rocket, cloud, suit and
+    briefcase, beret and brush, wrench. Tool hats/suits replace the outfit.
+  - **Moves:** walk with arm swing and stride, look, sit, stretch, hop
+    with a landing squash, dance (bob and turn on the beat), spin, wave
+    (blocked agent, or two Clawds meeting), cheer when the agent finishes,
+    then a 3-5 s nap.
+- Tests: `toy_front_pose_is_a_shaded_block`,
+  `toy_side_pose_turns_its_shade_away`, `toy_outfits_stay_on_the_body`,
+  every move incl. Land/Dance/Spin, tool detection; full suite 1962 green.
+- **Verdict:** the user saw it live and said it looks bad ("looking like
+  shit"). Saved as a record only; the next attempt should start from a new
+  visual direction, not tweak this sprite.
 
 ### 0.6.0: Clawd cloned from the Claude desktop app
 - The user rated 0.5.0 2.5/10 ("very strange") and gave a screen recording
@@ -152,9 +179,8 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
 - `crates/cmux-tui/src/app/tests/toy_deck.rs`: end-to-end tests.
 
 ## Known limits
-- Terminal cells cap the detail: a rail Clawd is 16x5 quarter-cell pixels, a
-  header Clawd 12x4. A quarter-cell pixel is twice as tall as wide, so the
-  eyes are tall notches, as in the Claude Code banner.
+- Terminal cells cap the detail: a Clawd is 8x6 half-cell pixels, so an
+  outfit is one or two pixels; the header has no room overhead to hop.
 - Quarter blocks need the host terminal to draw block elements itself
   (Windows Terminal does; so does the Claude Code banner).
 - The camera flash lasts one 80 ms frame, the shortest a frame can be.
@@ -162,6 +188,9 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
   for the kitty keyboard protocol); in a host that does not, it stays Enter.
 
 ## Next steps
+- Redesign the toys again: 0.5.0 (3D quarter blocks), 0.6.0 (banner Clawd)
+  and 0.7.0 (8x6 shaded Clawd with outfits) were all rejected. Get a
+  concrete visual reference from the user before drawing the next one.
 - Look at it live: open 4-5 Claude panes, check deck spacing, chip names
   and toy visits across panes.
 - Open a PR upstream from `Mrwanawad/cmux:windows-wsl` if the user wants
