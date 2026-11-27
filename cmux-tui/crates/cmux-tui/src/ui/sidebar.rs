@@ -834,12 +834,40 @@ fn draw_workspaces(app: &mut App, frame: &mut Frame) {
             state,
         );
     }
+    draw_toys(app, frame, viewport, body_rows, palette);
     if let Some(section) = agents_section {
         hits.extend(draw_agents_section(app, frame, section, palette, metrics));
     }
     hits.push((rail::row(area, area.y), Hit::RailPad(RailKind::Workspace)));
     hits.push((rail::divider(full_area), Hit::RailResize(RailKind::Workspace)));
     app.hits.extend(hits);
+}
+
+/// The sidebar toys live in the rail body below the last workspace row.
+fn draw_toys(
+    app: &mut App,
+    frame: &mut Frame,
+    viewport: rail::Viewport,
+    body_rows: usize,
+    palette: rail::RailPalette,
+) {
+    let body = viewport.body;
+    let used = body_rows.saturating_sub(viewport.body_offset);
+    if !app.config.sidebar.toys || used + 1 >= usize::from(body.height) {
+        return;
+    }
+    let used = used as u16 + 1;
+    let area = Rect {
+        x: body.x + 1,
+        y: body.y + used,
+        width: body.width.saturating_sub(3),
+        height: body.height - used,
+    };
+    let agents: Vec<_> =
+        app.sidebar_status.agents().iter().map(|row| (row.surface, row.status)).collect();
+    let bg = palette.base.bg.unwrap_or(Color::Reset);
+    super::toy::draw_rail(&mut app.toy_rail, frame.buffer_mut(), area, &agents, bg, palette.dim);
+    app.sidebar_toy_visible |= super::toy::fits(area);
 }
 
 fn draw_files(app: &mut App, frame: &mut Frame) -> Option<(u16, u16)> {

@@ -15,6 +15,7 @@ mod scrollbar;
 mod sidebar;
 pub(crate) mod sizing;
 pub(crate) mod terminal_grid;
+pub(crate) mod toy;
 
 use cmux_tui_core::Rect;
 use ratatui::Frame;
@@ -104,6 +105,8 @@ pub fn draw(app: &mut App, frame: &mut Frame) {
     app.reset_rendered_status_message();
     let area = frame.area();
     app.hits.clear();
+    app.sidebar_toy_visible = false;
+    app.header_toy_strips.clear();
     if area.width == 0 || area.height == 0 {
         return;
     }
@@ -152,6 +155,17 @@ pub fn draw(app: &mut App, frame: &mut Frame) {
     } else {
         pane::draw_all(app, frame)
     };
+    // Header toys play above every agent pane, sidebar open or not.
+    if app.config.sidebar.toys {
+        let agents: Vec<_> =
+            app.sidebar_status.agents().iter().map(|row| (row.surface, row.status)).collect();
+        let strips = std::mem::take(&mut app.header_toy_strips);
+        let dim = Style::default();
+        if toy::draw_header(&mut app.toy_header, frame.buffer_mut(), &strips, &agents, dim) {
+            app.sidebar_toy_visible = true;
+        }
+        app.header_toy_strips = strips;
+    }
     if app.is_surface_only() || !app.config.status_bar.visible {
         // No reserved status row: transient messages overlay the last row
         // with foreground styling only, single-surface style. Copy mode

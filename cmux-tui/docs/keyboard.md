@@ -91,6 +91,8 @@ Workspace navigation follows tmux's outer session lane: `(` and `)` move backwar
 
 `Ctrl-b x` closes the active tab because tab lifecycle is the more frequent cmux action. `Ctrl-b X` closes its containing pane. Rebind either action independently with `keys.close-tab` and `keys.close-pane`.
 
+`Shift-Enter` in a tab that runs an agent sends ESC CR (Meta-Enter), the newline key Claude Code's `/terminal-setup` installs, so the prompt starts a new line instead of submitting. In other tabs `Shift-Enter` keeps its usual encoding, so a shell still runs the line. The host terminal must report Shift with Enter; cmux asks it for the kitty keyboard protocol.
+
 `Ctrl-b ]` is unbound because cmux has no paste-buffer concept. `Ctrl-b q` is unbound because there is no pane-number quick-jump overlay yet.
 
 ## Copy Mode

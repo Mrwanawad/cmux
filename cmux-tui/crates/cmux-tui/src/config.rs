@@ -575,6 +575,9 @@ struct RawSidebar {
     workspace_label: Option<String>,
     /// The workspace rail's agents section; `false` hides it.
     agents: Option<bool>,
+    /// The animated Clawds in the rail and the agent panes' decks; `false`
+    /// hides them and gives the deck rows back to the panes.
+    toys: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1084,6 +1087,9 @@ pub struct Sidebar {
     /// Show the agents section (every agent across workspaces, most urgent
     /// first) at the bottom of the workspace rail.
     pub agents: bool,
+    /// Animated Clawds: one per working agent in the workspace rail's free
+    /// space, and one in a two-row deck above every agent pane.
+    pub toys: bool,
 }
 
 /// Background agent integrations. The process is optional and runs outside
@@ -1123,6 +1129,7 @@ impl Default for Sidebar {
             rail_glyph: "\u{258e}".to_string(),
             workspace_label: "{name}".to_string(),
             agents: true,
+            toys: true,
         }
     }
 }
@@ -3614,6 +3621,9 @@ pub fn load() -> Config {
                 "cmux-tui: ignoring sidebar.rail_glyph {glyph:?}: one single-width character or \"none\""
             );
         }
+    }
+    if let Some(toys) = raw.sidebar.toys {
+        config.sidebar.toys = toys;
     }
     if let Some(agents) = raw.sidebar.agents {
         config.sidebar.agents = agents;

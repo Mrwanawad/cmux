@@ -163,3 +163,19 @@ fn workspace_second_line_is_the_active_pane_title() {
     assert_eq!(status.workspace(2).unwrap().subtitle, "zsh");
     assert!(status.agents().is_empty());
 }
+
+#[test]
+fn session_topic_names_agent_tabs_after_the_conversation() {
+    let agents: Vec<String> = ["claude", "codex"].map(String::from).to_vec();
+    assert_eq!(
+        session_topic("✳ CMUX animated sleeping toys", &agents, 28).as_deref(),
+        Some("CMUX animated sleeping toys")
+    );
+    assert_eq!(
+        session_topic("⠂ Fix the PowerShell popup on startup", &agents, 20).as_deref(),
+        Some("Fix the PowerShell…")
+    );
+    assert_eq!(session_topic("✳ Claude Code", &agents, 28), None);
+    assert_eq!(session_topic("claude", &agents, 28), None);
+    assert_eq!(session_topic("", &agents, 28), None);
+}

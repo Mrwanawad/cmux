@@ -6894,6 +6894,8 @@ struct PaneAreaProjection<'a> {
     screen: &'a ScreenView,
     layout: &'a [(PaneId, VirtualRect)],
     stacked_headers: &'a HashSet<PaneId>,
+    /// Panes that give their top rows to the header toys' deck.
+    toy_decks: &'a HashSet<PaneId>,
     area: Rect,
     scrollbar_position: ScrollbarPosition,
     pane_padding: u16,
@@ -6924,6 +6926,39 @@ struct ViewportPaneAreaProjection {
     prefix_max_right: Vec<u64>,
 }
 
+/// Bytes that make an agent's prompt start a new line for `key`: ESC CR
+/// (Meta+Enter) for a bare Shift+Enter in an agent pane. Elsewhere Shift+
+/// Enter keeps its usual encoding, so shells still run the line.
+fn agent_newline_bytes(key: &KeyEvent, agent_pane: bool) -> Option<&'static [u8]> {
+    (agent_pane
+        && key.code == KeyCode::Enter
+        && key.modifiers == KeyModifiers::SHIFT
+        && key.kind != KeyEventKind::Release)
+        .then_some(b"\x1b\r".as_slice())
+}
+
+/// Rows an agent pane gives its header toys above the tab bar.
+pub(crate) const TOY_DECK_ROWS: u16 = 2;
+
+/// Whether a pane whose (deck-trimmed) rect is `height` rows tall has a
+/// toy deck above it; short panes keep every row for the terminal.
+pub(crate) fn toy_deck_fits(height: u16) -> bool {
+    height >= 6
+}
+
+/// `full_rect` minus the toy deck rows on top, when the pane has a deck.
+fn toy_deck_trim(full_rect: VirtualRect, deck: bool) -> VirtualRect {
+    if deck && toy_deck_fits(full_rect.height.saturating_sub(TOY_DECK_ROWS)) {
+        VirtualRect {
+            y: full_rect.y + TOY_DECK_ROWS,
+            height: full_rect.height - TOY_DECK_ROWS,
+            ..full_rect
+        }
+    } else {
+        full_rect
+    }
+}
+
 fn full_pane_parts_for_layout(
     pane: &PaneView,
     full_rect: VirtualRect,
@@ -6950,15 +6985,23 @@ fn full_pane_parts_for_layout(
     Some((surface_id, parts))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn pane_area_source(
     layout_order: usize,
     pane: &PaneView,
     full_rect: VirtualRect,
     stacked_headers: &HashSet<PaneId>,
+    toy_decks: &HashSet<PaneId>,
     scrollbar_position: ScrollbarPosition,
     pane_padding: u16,
     surface_only: Option<SurfaceId>,
 ) -> Option<PaneAreaSource> {
+    let full_rect = toy_deck_trim(
+        full_rect,
+        surface_only.is_none()
+            && !stacked_headers.contains(&pane.id)
+            && toy_decks.contains(&pane.id),
+    );
     let (surface, (full_bar, full_omnibar, full_content, full_track)) = full_pane_parts_for_layout(
         pane,
         full_rect,
@@ -6995,6 +7038,7 @@ impl ViewportPaneAreaProjection {
             screen,
             layout,
             stacked_headers,
+            toy_decks,
             scrollbar_position,
             pane_padding,
             surface_only,
@@ -7019,6 +7063,7 @@ impl ViewportPaneAreaProjection {
                     panes.get(&pane_id).copied()?,
                     full_rect,
                     stacked_headers,
+                    toy_decks,
                     scrollbar_position,
                     pane_padding,
                     surface_only,
@@ -7063,6 +7108,7 @@ fn swept_viewport_size_leases(
         screen,
         layout,
         stacked_headers,
+        toy_decks,
         area,
         scrollbar_position,
         pane_padding,
@@ -7079,6 +7125,12 @@ fn swept_viewport_size_leases(
     let mut leases = Vec::new();
     for &(pane_id, full_rect) in layout {
         let Some(pane) = panes.get(&pane_id).copied() else { continue };
+        let full_rect = toy_deck_trim(
+            full_rect,
+            surface_only.is_none()
+                && !stacked_headers.contains(&pane_id)
+                && toy_decks.contains(&pane_id),
+        );
         let Some((surface, (_, _, content, _))) = full_pane_parts_for_layout(
             pane,
             full_rect,
@@ -7187,6 +7239,7 @@ fn rebuild_pane_areas(pane_areas: &mut Vec<PaneArea>, projection: PaneAreaProjec
         screen,
         layout,
         stacked_headers,
+        toy_decks,
         area,
         scrollbar_position,
         pane_padding,
@@ -7206,6 +7259,7 @@ fn rebuild_pane_areas(pane_areas: &mut Vec<PaneArea>, projection: PaneAreaProjec
             pane,
             full_rect,
             stacked_headers,
+            toy_decks,
             scrollbar_position,
             pane_padding,
             surface_only,
@@ -7545,6 +7599,16 @@ pub struct App {
     pub omnibar: Option<OmnibarState>,
     pub toast: Option<Toast>,
     pub(crate) shake_frames: u8,
+    /// The last frame drew a sidebar toy, so the loop keeps repainting.
+    pub(crate) sidebar_toy_visible: bool,
+    sidebar_toy_painted_at: Instant,
+    /// The toys' physics worlds: the sidebar floor and the pane headers.
+    pub(crate) toy_rail: crate::ui::toy::ToyWorld,
+    pub(crate) toy_header: crate::ui::toy::ToyWorld,
+    /// Free header cells of agent panes, collected while panes draw.
+    pub(crate) header_toy_strips: Vec<crate::ui::toy::HeaderStrip>,
+    /// Agent panes that give their top rows to the header toys' deck.
+    pub(crate) toy_decks: HashSet<PaneId>,
     pub selection: Option<Selection>,
     selection_generation: u64,
     selection_mode: SelectionMode,
@@ -9819,6 +9883,12 @@ fn run_with_machine_updates_inner(request: RunRequest) -> anyhow::Result<RunOutc
         omnibar: None,
         toast: None,
         shake_frames: 0,
+        sidebar_toy_visible: false,
+        sidebar_toy_painted_at: Instant::now(),
+        toy_rail: Default::default(),
+        toy_header: Default::default(),
+        header_toy_strips: Vec::new(),
+        toy_decks: HashSet::new(),
         selection: None,
         selection_generation: 0,
         selection_mode: SelectionMode::Cell,
@@ -10442,6 +10512,24 @@ impl App {
     /// Rebuild the agent status index from the tree just adopted and the
     /// session's agent roster, then treat a turn that finished while the
     /// person views its tab as seen. Runs on layout frames only.
+    /// Panes of the active screen whose active tab runs an agent: each
+    /// gets a deck above its tab bar where the header toys play.
+    fn toy_deck_panes(&self) -> HashSet<PaneId> {
+        if !self.config.sidebar.toys || self.surface_only.is_some() {
+            return HashSet::new();
+        }
+        let Some(screen) = self.tree.active_screen() else { return HashSet::new() };
+        screen
+            .panes
+            .iter()
+            .filter(|pane| {
+                pane.active_surface()
+                    .is_some_and(|surface| self.sidebar_status.tab(surface).is_some())
+            })
+            .map(|pane| pane.id)
+            .collect()
+    }
+
     fn refresh_sidebar_status(&mut self) {
         let agents = self.session.agents();
         self.sidebar_status = crate::sidebar_status::SidebarStatus::build(&self.tree, &agents);
@@ -11081,6 +11169,10 @@ impl App {
             } else {
                 Duration::from_millis(250)
             };
+            let timeout = match self.sidebar_toy_wait(Instant::now()) {
+                Some(wait) => timeout.min(wait),
+                None => timeout,
+            };
             let timeout = terminal_paints.wait_timeout(timeout, Instant::now());
             let mut toast_expired_on_timeout = false;
             let first = match rx.recv_timeout(timeout) {
@@ -11151,6 +11243,9 @@ impl App {
                 action = action.merge(RenderAction::Draw);
             }
             action = action.merge(self.advance_viewport_animation(Instant::now()));
+            if self.sidebar_toy_wait(Instant::now()) == Some(Duration::ZERO) {
+                action = action.merge(RenderAction::Paint);
+            }
             if self.advance_expired_durable_notice() {
                 action = action.merge(RenderAction::Draw);
             }
@@ -13825,6 +13920,9 @@ impl App {
             terminal.draw(|frame| {
                 self.prepare_frame_layout(frame.area(), action);
                 crate::ui::draw(self, frame);
+                if self.sidebar_toy_visible {
+                    self.sidebar_toy_painted_at = Instant::now();
+                }
             })
         })??;
         self.sync_text_input_viewports();
@@ -14765,6 +14863,14 @@ impl App {
         Ok(())
     }
 
+    /// How long until the sidebar toys want their next frame, or `None`
+    /// when no toy is on screen.
+    fn sidebar_toy_wait(&self, now: Instant) -> Option<Duration> {
+        self.sidebar_toy_visible.then(|| {
+            (self.sidebar_toy_painted_at + crate::ui::toy::FRAME).saturating_duration_since(now)
+        })
+    }
+
     fn viewport_animation_active(&self) -> bool {
         self.config.viewport.animation
             && self
@@ -14812,6 +14918,7 @@ impl App {
                 screen,
                 layout: &self.viewport_layout,
                 stacked_headers: &self.viewport_stacked_headers,
+                toy_decks: &self.toy_decks,
                 area: self.content_area,
                 scrollbar_position: self.config.scrollbar.position,
                 pane_padding: self.config.pane.padding,
@@ -14932,6 +15039,7 @@ impl App {
         }
         self.replace_tree(self.session.tree());
         self.refresh_sidebar_status();
+        self.toy_decks = self.toy_deck_panes();
         self.claim_active_terminal_geometry(false);
         if self.surface_only.is_none() {
             self.sidebar_workspace_selection = self
@@ -14999,6 +15107,7 @@ impl App {
             screen: &screen,
             layout: &layout.panes,
             stacked_headers: &layout.stacked_headers,
+            toy_decks: &self.toy_decks,
             area,
             scrollbar_position: self.config.scrollbar.position,
             pane_padding: self.config.pane.padding,
@@ -15032,6 +15141,7 @@ impl App {
                     screen: &screen,
                     layout: &layout.panes,
                     stacked_headers: &layout.stacked_headers,
+                    toy_decks: &self.toy_decks,
                     area,
                     scrollbar_position: self.config.scrollbar.position,
                     pane_padding: self.config.pane.padding,
@@ -18723,13 +18833,11 @@ impl App {
         // Editor-style word selection (Ctrl+Shift+Left/Right by default)
         // enters copy mode on the focused terminal and selects the first word.
         if self.focus == FocusTarget::Pane
-            && let Some(action) = self
-                .config
-                .keys
-                .copy_mode
-                .action_for(&binding_key)
-                .or_else(|| {
-                    binding_fallback.as_ref().and_then(|key| self.config.keys.copy_mode.action_for(key))
+            && let Some(action) =
+                self.config.keys.copy_mode.action_for(&binding_key).or_else(|| {
+                    binding_fallback
+                        .as_ref()
+                        .and_then(|key| self.config.keys.copy_mode.action_for(key))
                 })
             && matches!(
                 action,
@@ -21206,6 +21314,17 @@ impl App {
                 return;
             }
             self.forward_browser_key_to(surface_id, surface, input);
+            return;
+        }
+        // Shift+Enter in an agent pane starts a new line in the prompt
+        // instead of sending it, as Claude Code's own terminal setup does.
+        if let Some(bytes) =
+            agent_newline_bytes(&input.ui_key(), self.sidebar_status.tab(surface_id).is_some())
+        {
+            self.encode_buf.clear();
+            self.encode_buf.extend_from_slice(bytes);
+            let _ = surface.scroll_to_bottom();
+            let _ = self.write_encoded_pty_bytes(surface_id, surface, PtyInputKind::Ordered);
             return;
         }
         let Some(input) = input.into_terminal_input() else {
@@ -25350,6 +25469,7 @@ mod tests {
     mod attention;
     mod copy_mode;
     mod sidebar_agent_status;
+    mod toy_deck;
 
     #[test]
     fn input_class_groups_routing_semantics() {
@@ -29822,6 +29942,7 @@ mod tests {
                 screen: &screen,
                 layout: &layout,
                 stacked_headers: &HashSet::new(),
+                toy_decks: &HashSet::new(),
                 area: Rect { x: 0, y: 0, width: 80, height: 24 },
                 scrollbar_position: ScrollbarPosition::Column,
                 pane_padding: 0,
@@ -29881,6 +30002,7 @@ mod tests {
                 screen: &screen,
                 layout: &layout,
                 stacked_headers: &HashSet::new(),
+                toy_decks: &HashSet::new(),
                 area: Rect { x: 0, y: 0, width: 80, height: 24 },
                 scrollbar_position: ScrollbarPosition::Column,
                 pane_padding: 0,
@@ -30021,6 +30143,7 @@ mod tests {
             screen: &screen,
             layout: &layout,
             stacked_headers: &stacked_headers,
+            toy_decks: &HashSet::new(),
             area,
             scrollbar_position: ScrollbarPosition::Column,
             pane_padding: 0,
@@ -30064,6 +30187,7 @@ mod tests {
                     screen: &screen,
                     layout: &layout,
                     stacked_headers: &stacked_headers,
+                    toy_decks: &HashSet::new(),
                     area,
                     scrollbar_position: ScrollbarPosition::Column,
                     pane_padding: 0,
@@ -47177,6 +47301,12 @@ mod tests {
             omnibar: None,
             toast: None,
             shake_frames: 0,
+            sidebar_toy_visible: false,
+            sidebar_toy_painted_at: Instant::now(),
+            toy_rail: Default::default(),
+            toy_header: Default::default(),
+            header_toy_strips: Vec::new(),
+            toy_decks: HashSet::new(),
             selection: None,
             selection_generation: 0,
             selection_mode: SelectionMode::Cell,

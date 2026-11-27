@@ -72,7 +72,7 @@ Selection colors are resolved in this order: explicit cmux-tui config, Ghostty c
 | `tabs.min_width` | integer | `7` | Minimum tab label width, clamped to 3 through 40 |
 | `tabs.solid_background` | boolean | `true` | Renders tab chips with solid backgrounds |
 | `tabs.show_titles` | boolean | `false` | Shows full process titles after tab numbers |
-| `tabs.agents` | string array | `["claude","codex","opencode","pi"]` | Agent names surfaced in tab labels when `show_titles` is false |
+| `tabs.agents` | string array | `["claude","codex","opencode","pi"]` | Agent names surfaced in tab labels when `show_titles` is false; an agent tab whose title names its session shows that topic instead |
 | `tabs.style` | `"block"`, `"pill"`, or `"slant"` | `"block"` | Cap glyphs around solid tab chips (Nerd Font powerline glyphs, catppuccin-tmux style) |
 | `tabs.plus.label` | string | `" + "` | Text of the tab bar's `+` button |
 | `tabs.plus.action` | action name or `command:<id>` | new tab | Left-click override for the `+` button |
@@ -85,6 +85,10 @@ Tabs are numbered by default. A recognized agent program can appear after the nu
 The built-in sidebar defaults to the workspace list. Set `"sidebar": {"view": "files"}` for the yazi-style file browser. `Tab` toggles the built-in view while the sidebar is focused, and the configurable `toggle-sidebar-view` action toggles it from anywhere. A configured `sidebar.plugin` still replaces either built-in view.
 
 The workspace list shows agent state with no configuration. Each workspace row starts with the rolled-up status of its agents and shows the active pane's title on its second line. Below the workspaces, an **agents** section lists every agent across all workspaces as an attention queue: `blocked` first, then `done`, `working`, `idle` and `unknown`, the most recent change first inside each status. Click a row, or select it with the arrow keys in the focused sidebar and press `Enter`, to focus that agent's tab. Tab chips show the same status glyph. The section takes at most half the rail and appears only when an agent runs; set `"sidebar": {"agents": false}` to hide it.
+
+An agent tab chip shows the session's topic. Claude Code titles its terminal after the conversation once it has one, so the chip reads `0 Fix login redirect` instead of `0 claude`; topics longer than 28 characters end in `…`. A bare program name ("claude", "Claude Code") is no topic yet, and a tab you renamed keeps its name.
+
+Clawd, the Claude mascot, lives in the chrome while `sidebar.toys` is on. In the workspace rail's free space one Clawd plays per working agent; with none working, one Clawd naps a few seconds and wakes up. Every pane whose active tab runs an agent gives two rows above its tab bar to a deck where a smaller Clawd plays, whether the sidebar is open or closed; the pane's terminal is two rows shorter, and panes shorter than eight rows get no deck. Clawds idle and blink, glance aside, walk and sit turned three quarters, stretch, hop, and play with a mouse on its cable; header Clawds visit the Clawd of a neighbor pane on the same row. A Clawd naps a few seconds when its agent turns idle. The sprites use quarter-block characters, as the Claude Code banner does.
 
 | Status | Glyph | Meaning |
 | --- | --- | --- |
@@ -128,6 +132,7 @@ Every view has an independent width and drag handle. Lower `collapse_priority` v
 | `sidebar.rail_glyph` | string | `"▎"` | Accent glyph on active rail rows; `"none"` removes it |
 | `sidebar.workspace_label` | string | `"{name}"` | Workspace row template with `{index}` and `{name}` |
 | `sidebar.agents` | boolean | `true` | Show the agents section (every agent, most urgent first) at the bottom of the workspace list |
+| `sidebar.toys` | boolean | `true` | Animated Clawds: one per working agent in the workspace rail's free space, and one in a two-row deck above every agent pane; `false` removes both and gives the deck rows back to the panes |
 | `sidebar.columns` | array of column objects | unset | Compatibility form for one-level `machines`, `workspaces`, and `tabs` views |
 | `sidebar.plugin.command` | array of strings | unset | External sidebar plugin argv; when set, the sidebar hosts this program in a PTY instead of the built-in list |
 | `sidebar.plugin.cwd` | string | unset | Working directory for the sidebar plugin process |

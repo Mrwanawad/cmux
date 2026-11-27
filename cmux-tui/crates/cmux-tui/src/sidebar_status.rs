@@ -189,7 +189,7 @@ fn agent_label<'a>(
     agent.filter(|agent| !agent.is_empty()).unwrap_or(short_id)
 }
 
-fn strip_title_glyph(title: &str) -> &str {
+pub(crate) fn strip_title_glyph(title: &str) -> &str {
     let title = title.trim();
     let mut chars = title.chars();
     match chars.next() {
@@ -201,6 +201,25 @@ fn strip_title_glyph(title: &str) -> &str {
         }
         _ => title,
     }
+}
+
+/// The session's topic from an agent tab's title, shortened for a tab chip.
+/// Claude Code titles its terminal after the conversation ("✳ Fix login
+/// redirect") once it has a topic; a bare program name ("claude", "Claude
+/// Code") is no topic yet.
+pub(crate) fn session_topic(title: &str, agents: &[String], max: usize) -> Option<String> {
+    let topic = strip_title_glyph(title);
+    let lower = topic.to_lowercase();
+    if topic.is_empty() || lower == "claude code" || agents.iter().any(|agent| *agent == lower) {
+        return None;
+    }
+    if topic.chars().count() <= max {
+        return Some(topic.to_string());
+    }
+    let mut short: String = topic.chars().take(max.saturating_sub(1)).collect();
+    short.truncate(short.trim_end().len());
+    short.push('…');
+    Some(short)
 }
 
 fn workspace_subtitle(workspace: &crate::session::WorkspaceView, screens_count: &str) -> String {

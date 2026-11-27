@@ -229,6 +229,9 @@ fn tab_scroll_for_active(
     scroll
 }
 
+/// The longest session topic an agent tab chip shows.
+const TOPIC_WIDTH: usize = 28;
+
 fn draw_tab_bar(app: &mut App, frame: &mut Frame, area: &PaneArea, focused: bool) {
     let Some(bar) = area.bar else { return };
     let Some(screen_view) = app.tree.active_screen() else { return };
@@ -241,6 +244,15 @@ fn draw_tab_bar(app: &mut App, frame: &mut Frame, area: &PaneArea, focused: bool
         .map(|(i, t)| {
             let agent = app.sidebar_status.tab(t.surface);
             let mut label = tab_label(&tab_cfg, i, &t.title, t.name.as_deref());
+            // An agent tab shows its session's topic, so every pane says
+            // what it is working on.
+            if agent.is_some()
+                && t.name.as_deref().is_none_or(str::is_empty)
+                && let Some(topic) =
+                    crate::sidebar_status::session_topic(&t.title, &tab_cfg.agents, TOPIC_WIDTH)
+            {
+                label = format!("{i} {topic}");
+            }
             // A done agent's glyph already says "finished, unseen".
             if agent != Some(AgentStatus::Done)
                 && t.notification.is_some_and(|notification| notification.unread)
@@ -458,6 +470,28 @@ fn draw_tab_bar(app: &mut App, frame: &mut Frame, area: &PaneArea, focused: bool
         let rect = Rect { x, y: 0, width: plus_w, height: 1 };
         buf.set_stringn(origin_x + x, origin_y, &plus_label, plus_w as usize, ctrl_style(rect));
         hits.push((rect, Hit::NewTab { pane: pane_id }));
+        x += plus_w;
+    }
+    // The rest of the row is free: with the deck rows above, the pane's
+    // header toy lives there.
+    if direct
+        && app.toy_decks.contains(&pane_id)
+        && crate::app::toy_deck_fits(area.rect.height)
+        && let Some(status) = app.sidebar_status.tab(area.surface)
+        && let Some(deck_y) = origin_y.checked_sub(crate::app::TOY_DECK_ROWS)
+        && x + 2 < max_x
+    {
+        app.header_toy_strips.push(crate::ui::toy::HeaderStrip {
+            rect: Rect { x: origin_x + x + 1, y: origin_y, width: max_x - x - 2, height: 1 },
+            deck: Rect {
+                x: area.rect.x,
+                y: deck_y,
+                width: area.rect.width,
+                height: crate::app::TOY_DECK_ROWS,
+            },
+            surface: area.surface,
+            status,
+        });
     }
 
     if let Some(logical) = logical.take() {
