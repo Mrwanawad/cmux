@@ -92,10 +92,12 @@ public final class RegistryPaletteProvider: PaletteProvider {
         private var sections: [ActionCategory: PaletteSection] = [:]
 
         init(_ provider: RegistryPaletteProvider) {
+            let scratchStart = ScratchOpenProfile.now()
             self.provider = provider
             kept = provider.rows
             kept.context.update(from: provider)
             entries = provider.registry.entries
+            ScratchOpenProfile.part("pass.init", ScratchOpenProfile.now() - scratchStart)
         }
 
         // Released with a listing, which a task can release off the main actor.
@@ -111,17 +113,19 @@ public final class RegistryPaletteProvider: PaletteProvider {
         }
 
         private func readEntry(_ entry: ActionEntry) {
+            let scratchStart = ScratchOpenProfile.now()
+            defer { ScratchOpenProfile.add(entry.descriptor.id, ScratchOpenProfile.now() - scratchStart) }
             let registry = provider.registry
             let descriptor = entry.descriptor
             let actionID = descriptor.id
             guard descriptor.isPaletteVisible, !provider.hiddenIDs.contains(actionID),
-                  registry.isAvailable(actionID, in: provider.paletteContext(for: descriptor)) else { return }
+                  ScratchOpenProfile.time("isAvailable", { registry.isAvailable(actionID, in: provider.paletteContext(for: descriptor)) }) else { return }
             // An override is decided when its row runs (`PaletteEffect.deferred`), never on open:
             // Rename Tab and Rename Workspace read every tab and workspace, an action page builds
             // its page. Declining there (nothing to rename) falls back to the action itself.
             let overridden = provider.effectOverrides[actionID] != nil
             guard entry.isBound || overridden || provider.includeUnbound else { return }
-            let face = provider.face(of: entry, overridden: overridden, unbound: unbound)
+            let face = ScratchOpenProfile.time("face", { provider.face(of: entry, overridden: overridden, unbound: unbound) })
             guard face.isEnabled || !entry.isBound else { return }
             if !descriptor.isDebugOnly && (entry.isBound || overridden) { eligible.insert(actionID) }
             listed.append(RegistryPaletteRows.Listed(id: actionID, face: face))
@@ -133,7 +137,7 @@ public final class RegistryPaletteProvider: PaletteProvider {
             if labels == nil { labels = RowLabels() }
             let section = sections[descriptor.category] ?? RegistryPaletteProvider.section(for: descriptor.category)
             sections[descriptor.category] = section
-            let item = provider.makeRow(descriptor, face: face, section: section, labels: labels ?? RowLabels(), context: kept.context)
+            let item = ScratchOpenProfile.time("makeRow", { provider.makeRow(descriptor, face: face, section: section, labels: labels ?? RowLabels(), context: kept.context) })
             kept.rows[actionID] = (face, item)
             provider.builtRows += 1
             items.append(item)
@@ -141,6 +145,8 @@ public final class RegistryPaletteProvider: PaletteProvider {
 
         /// The rows read, in the palette's order (the last arrangement when the same rows list with the same faces).
         func finish() -> [PaletteItem] {
+            let scratchStart = ScratchOpenProfile.now()
+            defer { ScratchOpenProfile.part("pass.finish", ScratchOpenProfile.now() - scratchStart) }
             let curates = provider.curatesEmptyRoot
             if let last = kept.arranged[curates], last.listed == listed { return last.items }
             let arranged = RegistryPaletteProvider.arranged(items, tierList: tiers)
@@ -156,16 +162,17 @@ public final class RegistryPaletteProvider: PaletteProvider {
         let action = registry.action(for: descriptor.id)
         // A row whose run would refuse for the focused object (a chat control that chat lacks) cannot run here.
         let collectsTarget = descriptor.paletteTarget != nil
-        let paletteReason = overridden || collectsTarget ? nil : action?.paletteUnavailableReason?()
-        let runs = overridden || (registry.canPerform(descriptor.id, in: paletteContext(for: descriptor)) && paletteReason == nil)
+        let paletteReason = overridden || collectsTarget ? nil : ScratchOpenProfile.time("face.paletteReason", { action?.paletteUnavailableReason?() })
+        let runs = overridden || (ScratchOpenProfile.time("face.canPerform", { registry.canPerform(descriptor.id, in: paletteContext(for: descriptor)) }) && paletteReason == nil)
         // A row a person can run past its reason (Sign In, then the action: ``ActionRecovery``) stays enabled.
-        let recovery = runs || paletteReason != nil ? nil : registry.personRecovery(for: descriptor.id)
+        let recovery = runs || paletteReason != nil ? nil : ScratchOpenProfile.time("face.recovery", { registry.personRecovery(for: descriptor.id) })
         let isEnabled = runs || recovery != nil
         // An on/off command's state, read now, every open (Lawrence 2026-11-03: "we don't know the current state").
-        let isOn = action?.paletteState?()
+        let isOn = ScratchOpenProfile.time("face.state", { action?.paletteState?() })
         // A toggle that opts in (`ActionTargetTitles.setPaletteTitle`) reads as the change it makes.
         // The state shows the one way every row that flips a state shows it (`PaletteToggleStyle.apply`).
-        let shown = PaletteTunables.toggleStyle.value.apply(title: action?.paletteTitle?() ?? descriptor.title,
+        let scratchTitle = ScratchOpenProfile.time("face.title", { action?.paletteTitle?() })
+        let shown = PaletteTunables.toggleStyle.value.apply(title: scratchTitle ?? descriptor.title,
                                                             symbol: descriptor.symbol, isOn: isOn)
         return RegistryPaletteRows.Face(
             title: shown.title,
@@ -176,7 +183,7 @@ public final class RegistryPaletteProvider: PaletteProvider {
             symbol: shown.symbol,
             isOn: isOn,
             flipsInPlace: isOn != nil && Self.flipsInPlace(descriptor, action: action),
-            keycaps: registry.shortcutKeycaps(for: descriptor.id),
+            keycaps: ScratchOpenProfile.time("face.keycaps", { registry.shortcutKeycaps(for: descriptor.id) }),
             // A row named by its setting ("Focus Ring") is still found by the verb people type.
             keywords: isOn == nil ? descriptor.keywords : descriptor.keywords + ["toggle"],
             isEnabled: isEnabled,

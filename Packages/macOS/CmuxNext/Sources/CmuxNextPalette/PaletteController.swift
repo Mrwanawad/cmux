@@ -217,11 +217,13 @@ public final class PaletteController {
     /// Opens the palette over `window` (default: the key or main window).
     public func show(_ mode: PaletteMode = .commands, relativeTo window: NSWindow? = nil) {
         anchorView = nil
-        configureScopes()
+        ScratchOpenProfile.time("show.configureScopes", { configureScopes() })
         markOpenStarted()
-        captureContext()
-        model.reset(to: page(for: mode))
+        ScratchOpenProfile.time("show.captureContext", { captureContext() })
+        let scratchPage = ScratchOpenProfile.time("show.page", { page(for: mode) })
+        ScratchOpenProfile.time("show.reset", { model.reset(to: scratchPage) })
         modelReady = .now
+        if case .commands = mode { ScratchOpenProfile.dump() }
         present(relativeTo: window)
     }
 

@@ -82,8 +82,8 @@ extension PaletteModel {
         }
         state.query = query
         state.generation = generation
-        if state.needsLoad { load(state) }
-        search(state)
+        if state.needsLoad { ScratchOpenProfile.time("nav.load", { load(state) }) }
+        ScratchOpenProfile.time("nav.search", { search(state) })
     }
 
     /// The page for a new level: one the caller supplied, the graph

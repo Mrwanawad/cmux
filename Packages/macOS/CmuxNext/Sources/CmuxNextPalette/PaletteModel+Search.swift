@@ -26,7 +26,7 @@ extension PaletteModel {
             follow(provider, of: state)
             // Read once: most providers build their rows in `immediateItems` (the command page's
             // registry builds a row per catalog action, Go to Workspace one per workspace).
-            let immediate = provider.immediateItems
+            let immediate = ScratchOpenProfile.time("immediate.\(provider.id)", { provider.immediateItems })
             if let immediate {
                 state.providerItems[provider.id] = immediate
             }
@@ -35,7 +35,7 @@ extension PaletteModel {
             }
         }
         state.pendingProviders = pending
-        state.rebuild()
+        ScratchOpenProfile.time("state.rebuild", { state.rebuild() })
         if state === current { isLoading = !pending.isEmpty }
         for provider in page.providers where pending.contains(provider.id) {
             state.tasks.append(loadTask(provider, into: state))
