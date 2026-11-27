@@ -1,6 +1,6 @@
 # Checkpoint: cmux-tui personal increments
 
-**Version: 0.7.0** (2026-11-27)
+**Version: 0.8.0** (2026-11-27)
 
 Branch `windows-wsl`, pushed to the fork `Mrwanawad/cmux` (remote `fork`,
 public, forked from `manaflow-ai/cmux`, where this account cannot push).
@@ -21,7 +21,39 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
 
 ## Version history
 
-### 0.7.0: small shaded Clawds with outfits, tools and more moves
+### 0.8.0: real-pixel 3D Clawds over Sixel
+- The user asked for 3D bots and said the icons looked shifted. Root cause of
+  every earlier rejection: a 2-row deck is 8x6 half-block pixels. Windows
+  Terminal 1.25 supports Sixel (DA1 has `4`) with a fixed 10x20 px cell
+  (`CSI 16 t` -> `6;20;10`), so a 2-row deck is 40 px tall.
+- New `ui/toy3d.rs`: a voxel Clawd (body 14x10x10, stub arms, four legs, eye
+  slits), posed per frame (`Pose3`: yaw, leg lift, low, tall, arms, eyes,
+  flat), turned about its vertical axis, low camera (20 deg), per-face light
+  in 5 steps, 1px outline, floor shadow, Sixel encoder (1:1 aspect, every
+  pixel set). Deck Clawds at 2 px/voxel, rail at 3 (2.2 when short).
+- `toy.rs`: `pose3()` maps each action to a 3D pose (spin is a real 360 deg
+  turn; other turns ease), `draw_rail_sixel`/`draw_header_sixel` push one
+  image per deck / rail area to `ToyWorld::jobs` and blank those cells.
+  Outfits and tools are not drawn in 3D (plain Clawd).
+- `app.rs::draw_terminal`: after the cell frame, drops images whose cells
+  something else drew over (menus, prompts), writes the rest
+  (`ESC 7`, CUP, DCS sixel, `ESC 8`), sends an image only when its bytes or
+  place changed, repaints all cells (`terminal.clear`) the frame after a toy
+  area disappears, and resends after a resize. Never draws on the last
+  screen row (Sixel there scrolls the host).
+- On when `WT_SESSION` is set; `CMUX_TOYS_SIXEL=1/0` forces it. Off in tests.
+- Eyeball: `CMUX_TOY3D_DUMP=<ppm> CMUX_TOY3D_SIXEL=<six> cargo test -p
+  cmux-tui --bin cmux-tui toy3d_dump -- --ignored`; `cat` the .six in a WT
+  tab to see the real thing.
+- Verified: 3 new `toy3d_` tests plus the 17 toy tests green; the dumped
+  Sixel frames render crisp in a Windows Terminal tab (right size, colors,
+  1:1 aspect). Not yet seen inside a live cmux (needs a cmux restart).
+- Docs: `docs/configuration.md` (toys paragraph, `CMUX_TOYS_SIXEL`).
+- Skills installed for this (Windows `~/.claude/skills`, symlinked into
+  WSL): `sprite-stacking` (danielwh2) and `pixel-art-studio` (Gamezxz). Run
+  their scripts with Windows `python.exe` (WSL python has no Pillow).
+
+### 0.7.0: small shaded Clawds with outfits, tools and more moves (superseded by 0.8.0)
 - The user found the flat pixel Clawds (half-block, 10x7, 20x14 on the rail,
   3-row deck) "way too big and too vague". Rewritten in `toy.rs`:
   - **Size:** 8x6 square half-cell pixels everywhere (rail too, no 2x);
@@ -169,7 +201,10 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
 
 ## Files
 - `crates/cmux-tui/src/ui/toy.rs`: personas, sprites, physics, rail and
-  header renderers, toy tests.
+  header renderers (block and Sixel), `pose3()` action-to-3D mapping, toy
+  tests.
+- `crates/cmux-tui/src/ui/toy3d.rs`: voxel Clawd model, 3D rasterizer,
+  Sixel encoder and `emit`, `toy3d_` tests and the `toy3d_dump` preview.
 - `crates/cmux-tui/src/ui/sidebar.rs`: `draw_toys()` for the rail.
 - `crates/cmux-tui/src/ui/pane.rs`: topic chips, `HeaderStrip` with deck.
 - `crates/cmux-tui/src/ui/mod.rs`: draws header toys every frame.
@@ -179,18 +214,23 @@ public, forked from `manaflow-ai/cmux`, where this account cannot push).
 - `crates/cmux-tui/src/app/tests/toy_deck.rs`: end-to-end tests.
 
 ## Known limits
-- Terminal cells cap the detail: a Clawd is 8x6 half-cell pixels, so an
-  outfit is one or two pixels; the header has no room overhead to hop.
-- Quarter blocks need the host terminal to draw block elements itself
-  (Windows Terminal does; so does the Claude Code banner).
-- The camera flash lasts one 80 ms frame, the shortest a frame can be.
+- 3D Clawds need a Sixel host; detection is `WT_SESSION` only (Windows
+  Terminal 1.22+). Other hosts get the 0.7.0 block Clawds unless
+  `CMUX_TOYS_SIXEL=1`. A cmux nested inside a cmux pane inherits
+  `WT_SESSION` and would send Sixel to the inner terminal.
+- Sixel assumes Windows Terminal's fixed 10x20 px cell; a host with another
+  Sixel cell size would scale the images wrong.
+- Outfits and tool props are not drawn in 3D yet.
+- Deck Clawds stand in the 2 deck rows, not on the tab bar row (a Sixel
+  image is a rectangle and would cover the tab chips).
+- Block mode: a Clawd is 8x6 half-cell pixels, too small for detail.
 - Shift+Enter needs the host terminal to report Shift with Enter (cmux asks
   for the kitty keyboard protocol); in a host that does not, it stays Enter.
 
 ## Next steps
-- Redesign the toys again: 0.5.0 (3D quarter blocks), 0.6.0 (banner Clawd)
-  and 0.7.0 (8x6 shaded Clawd with outfits) were all rejected. Get a
-  concrete visual reference from the user before drawing the next one.
+- Get the user's verdict on 0.8.0 live (close the cmux window, run `cmux`).
+  0.5.0-0.7.0 were rejected; if 0.8.0 lands, commit and push to the fork.
+- If wanted: outfits and tool props as voxel parts in `toy3d::build`.
 - Look at it live: open 4-5 Claude panes, check deck spacing, chip names
   and toy visits across panes.
 - Open a PR upstream from `Mrwanawad/cmux:windows-wsl` if the user wants

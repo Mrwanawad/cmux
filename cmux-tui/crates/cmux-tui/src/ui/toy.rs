@@ -23,6 +23,10 @@
 //! empty space. Every pane that
 //! hosts an agent also gets a Clawd in the deck above its tab bar; it stands
 //! on the tab bar's free cells and visits the Clawd of a neighbor pane.
+//!
+//! In a Sixel host (Windows Terminal) the Clawds are drawn instead as real-pixel
+//! 3D voxel models by `toy3d`: `pose3` turns each action into a 3D pose and
+//! each toy area becomes one image, written after the cell frame.
 
 use cmux_tui_core::{AgentStatus, Rect, SurfaceId};
 use ratatui::buffer::Buffer;
@@ -398,6 +402,10 @@ pub(crate) struct ToyWorld {
     last: Option<Instant>,
     rng: u64,
     clock: f32,
+    /// Sixel images for this frame (real-pixel 3D Clawds), and each toy's
+    /// eased turn in degrees.
+    pub(crate) jobs: Vec<super::toy3d::Job>,
+    yaws: Vec<(SurfaceId, f32)>,
 }
 
 impl Default for ToyWorld {
@@ -409,6 +417,8 @@ impl Default for ToyWorld {
             last: None,
             rng: 0x2545_F491_4F6C_DD1D,
             clock: 0.0,
+            jobs: Vec::new(),
+            yaws: Vec::new(),
         }
     }
 }
@@ -1415,6 +1425,202 @@ fn draw_toy(canvas: &mut Canvas, toy: &Body, s: i32, x_off: i32, ground: i32, cl
     }
 }
 
+/// The 3D pose of `toy` this frame and whether its turn is driven directly
+/// (a spin) rather than eased.
+fn pose3(toy: &Body, clock: f32) -> (super::toy3d::Pose3, bool) {
+    use super::toy3d::{Arm, Eyes as Eyes3, Pose3};
+    let tick = ((clock + toy.phase) * 10.0) as u32;
+    let blink = tick % 38 == 0;
+    let t = toy.act_t;
+    let beat = |len: f32| ((t / len) as i32).rem_euclid(2) == 1;
+    let side = |right: bool| if right { 50.0 } else { -50.0 };
+    let mut pose = Pose3::stand(side(toy.right));
+    if blink {
+        pose.eyes = Eyes3::Shut;
+    }
+    if toy.asleep() {
+        pose.flat = true;
+        pose.eyes = Eyes3::Shut;
+        pose.arms = (Arm::Tucked, Arm::Tucked);
+        pose.yaw = side(toy.right) * 0.6;
+        return (pose, false);
+    }
+    if !toy.grounded() {
+        pose.arms = (Arm::Up, Arm::Up);
+        return (pose, false);
+    }
+    match toy.action {
+        Action::Hop | Action::Look => {}
+        Action::Idle => pose.yaw = side(toy.right) * 0.35,
+        Action::Land | Action::Sit => pose.low = true,
+        Action::Walk => {
+            if toy.vx.abs() > 0.5 {
+                let step = (toy.x * 2.0).round() as i32;
+                let a = step.rem_euclid(2) == 0;
+                pose.lift = if a { [1, 0, 1, 0] } else { [0, 1, 0, 1] };
+                pose.arms = if a { (Arm::Mid, Arm::Out) } else { (Arm::Out, Arm::Mid) };
+            }
+        }
+        Action::Work => {
+            let alt = ((clock + toy.phase) / 0.3) as i32 % 2 == 1;
+            pose.arms = if alt { (Arm::Out, Arm::Mid) } else { (Arm::Mid, Arm::Out) };
+        }
+        Action::Stretch => {
+            if t > 0.15 && t < toy.act_len - 0.15 {
+                pose.tall = true;
+                pose.arms = (Arm::Up, Arm::Up);
+                pose.eyes = Eyes3::Shut;
+            }
+        }
+        Action::Wave => {
+            pose.yaw = side(toy.right) * 0.4;
+            let hand = if beat(0.2) { Arm::Mid } else { Arm::Up };
+            pose.arms = if toy.right { (Arm::Out, hand) } else { (hand, Arm::Out) };
+        }
+        Action::Dance => {
+            let n = (t / 0.3) as i32;
+            let right = if (n / 2) % 2 == 1 { !toy.right } else { toy.right };
+            pose.yaw = side(right) * 0.7;
+            if n % 2 == 1 {
+                pose.low = true;
+            } else {
+                pose.arms = (Arm::Up, Arm::Up);
+            }
+        }
+        Action::Spin => {
+            let k = (t / toy.act_len.max(0.1)).clamp(0.0, 1.0);
+            pose.yaw = side(toy.right) + 360.0 * k;
+            return (pose, true);
+        }
+        Action::Cheer => {
+            pose.yaw = side(toy.right) * 0.2;
+            pose.arms = (Arm::Up, Arm::Up);
+            pose.low = beat(0.2);
+        }
+    }
+    (pose, false)
+}
+
+impl ToyWorld {
+    /// Ease each toy's turn toward its pose and return the poses to draw.
+    fn poses3(&mut self, dt: f32) -> Vec<super::toy3d::Pose3> {
+        let clock = self.clock;
+        let mut out = Vec::with_capacity(self.toys.len());
+        let mut yaws = Vec::with_capacity(self.toys.len());
+        for toy in &self.toys {
+            let (mut pose, direct) = pose3(toy, clock);
+            let prev = self.yaws.iter().find(|(id, _)| *id == toy.id).map(|(_, y)| *y);
+            if let (Some(prev), false) = (prev, direct) {
+                let mut diff = (pose.yaw - prev).rem_euclid(360.0);
+                if diff > 180.0 {
+                    diff -= 360.0;
+                }
+                pose.yaw = prev + diff * (dt * 12.0).min(1.0);
+            }
+            yaws.push((toy.id, pose.yaw.rem_euclid(360.0)));
+            out.push(pose);
+        }
+        self.yaws = yaws;
+        out
+    }
+}
+
+/// Pixels of one sprite unit (a cell wide, half a cell tall) in a Sixel image.
+const UNIT: f32 = 10.0;
+
+/// Sixel rail: one image over the floor area, Clawds standing on its bottom.
+fn draw_rail_sixel(world: &mut ToyWorld, buf: &mut Buffer, area: Rect, bg: Color, dt: f32) {
+    use super::toy3d::{self, Image, Job};
+    // Never touch the screen's last row: an image there scrolls the host.
+    let screen = *buf.area();
+    let mut rect = area;
+    if rect.y + rect.height >= screen.y + screen.height {
+        rect.height = (screen.y + screen.height).saturating_sub(rect.y + 1);
+    }
+    if rect.height < 2 || rect.width == 0 {
+        return;
+    }
+    clear_cells(buf, rect, bg);
+    let poses = world.poses3(dt);
+    let (w, h) = (u32::from(rect.width) * toy3d::CELL_W, u32::from(rect.height) * toy3d::CELL_H);
+    let mut image = Image::new(w, h, toy3d::rgb(bg));
+    let ground = h as f32 - 8.0;
+    let scale = if h >= 70 { 3.0 } else { 2.2 };
+    for toy in &world.toys {
+        let cx = (toy.x + W as f32 / 2.0) * UNIT;
+        image.shadow(cx, ground, 8.0 * scale);
+    }
+    for (toy, pose) in world.toys.iter().zip(&poses) {
+        let cx = (toy.x + W as f32 / 2.0) * UNIT;
+        toy3d::draw_clawd(&mut image, pose, cx, ground, toy.y * UNIT, scale);
+    }
+    image.outline();
+    for toy in world.toys.iter().filter(|toy| toy.asleep()) {
+        let x = ((toy.x + W as f32) * UNIT) as i32;
+        let z = ((world.clock * 1.2) as i32) % 3;
+        image.zed(x + 4 * z, (ground - 14.0 * scale) as i32 - 6 * z, 5 + 2 * (z / 2));
+    }
+    world.jobs.push(Job { rect, image });
+}
+
+/// Sixel header: one image per agent pane's deck, Clawds standing on the
+/// deck's bottom edge, visitors drawn wherever they are.
+fn draw_header_sixel(world: &mut ToyWorld, buf: &mut Buffer, strips: &[HeaderStrip], dt: f32) {
+    use super::toy3d::{self, Image, Job};
+    let poses = world.poses3(dt);
+    for strip in strips {
+        let rect = strip.deck;
+        if rect.height == 0 || rect.width == 0 {
+            continue;
+        }
+        let bg = buf.cell((rect.x, rect.y)).map_or(Color::Reset, |cell| cell.bg);
+        clear_cells(buf, rect, bg);
+        let (w, h) = (u32::from(rect.width) * toy3d::CELL_W, u32::from(rect.height) * toy3d::CELL_H);
+        let mut image = Image::new(w, h, toy3d::rgb(bg));
+        let ground = h as f32 - 5.0;
+        let scale = 2.0;
+        let left = f32::from(rect.x);
+        let right = f32::from(rect.x + rect.width);
+        let mine: Vec<usize> = (0..world.toys.len())
+            .filter(|&i| {
+                let toy = &world.toys[i];
+                toy.lane == strip.rect.y && toy.x + W as f32 > left && toy.x < right
+            })
+            .collect();
+        for &i in &mine {
+            let cx = (world.toys[i].x - left + W as f32 / 2.0) * UNIT;
+            image.shadow(cx, ground, 8.0 * scale);
+        }
+        for &i in &mine {
+            let toy = &world.toys[i];
+            let cx = (toy.x - left + W as f32 / 2.0) * UNIT;
+            toy3d::draw_clawd(&mut image, &poses[i], cx, ground, toy.y * UNIT, scale);
+        }
+        image.outline();
+        for &i in &mine {
+            let toy = &world.toys[i];
+            if toy.asleep() {
+                let x = ((toy.x - left + W as f32) * UNIT) as i32 - 6;
+                let z = ((world.clock * 1.2) as i32) % 3;
+                image.zed(x + 3 * z, 12 - 4 * z, 4 + z / 2);
+            }
+        }
+        world.jobs.push(Job { rect, image });
+    }
+}
+
+/// Blank cells under a Sixel image, in the image's background color.
+fn clear_cells(buf: &mut Buffer, rect: Rect, bg: Color) {
+    for y in rect.y..rect.y + rect.height {
+        for x in rect.x..rect.x + rect.width {
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                cell.reset();
+                cell.set_bg(bg);
+            }
+        }
+    }
+}
+
 /// Half-block render of `canvas` into `area`: each cell shows its top pixel
 /// over its bottom one. `allow` limits which cells (absolute x, y) may change.
 fn blit(
@@ -1532,6 +1738,10 @@ pub(crate) fn draw_rail(
     world.sync(&wanted);
     let dt = world.tick(Instant::now());
     world.step(dt, ceiling);
+    if super::toy3d::enabled() {
+        draw_rail_sixel(world, buf, area, bg, dt);
+        return;
+    }
     let x0 = i32::from(area.x);
     let mut canvas = Canvas::new(x0, w, h);
     // Feet one pixel above the bottom, a soft shadow on the floor below.
@@ -1593,6 +1803,10 @@ pub(crate) fn draw_header(
     }
     let dt = world.tick(Instant::now());
     world.step(dt, 0.0);
+    if super::toy3d::enabled() {
+        draw_header_sixel(world, buf, &strips, dt);
+        return true;
+    }
     let mut rows: Vec<u16> = strips.iter().map(|strip| strip.rect.y).collect();
     rows.sort_unstable();
     rows.dedup();

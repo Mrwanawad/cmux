@@ -7609,6 +7609,13 @@ pub struct App {
     pub(crate) header_toy_strips: Vec<crate::ui::toy::HeaderStrip>,
     /// Agent panes that give their top rows to the header toys' deck.
     pub(crate) toy_decks: HashSet<PaneId>,
+    /// Areas that showed a Sixel toy image last frame, and whether the
+    /// next frame must repaint every cell to wipe one that went away.
+    pub(crate) toy_sixel_rects: Vec<Rect>,
+    pub(crate) toy_sixel_repaint: bool,
+    /// Each Sixel image the host shows: its area and a hash of its bytes.
+    pub(crate) toy_sixel_shown: Vec<(Rect, u64)>,
+    pub(crate) toy_sixel_size: (u16, u16),
     pub selection: Option<Selection>,
     selection_generation: u64,
     selection_mode: SelectionMode,
@@ -9517,6 +9524,9 @@ fn run_with_machine_updates_inner(request: RunRequest) -> anyhow::Result<RunOutc
         install_mux_diagnostic_logger(mux);
     }
     let mut config = startup_config.into_config();
+    if let Some(bg) = default_colors.bg {
+        crate::ui::toy3d::set_default_bg([bg.r, bg.g, bg.b]);
+    }
     let chrome = ChromeTheme::for_defaults(config.chrome, default_colors);
     config.apply_chrome_defaults(chrome);
     let session_available = machine_ui.as_ref().is_none_or(|machine| machine.session_available);
@@ -9889,6 +9899,10 @@ fn run_with_machine_updates_inner(request: RunRequest) -> anyhow::Result<RunOutc
         toy_header: Default::default(),
         header_toy_strips: Vec::new(),
         toy_decks: HashSet::new(),
+        toy_sixel_rects: Vec::new(),
+        toy_sixel_repaint: false,
+        toy_sixel_shown: Vec::new(),
+        toy_sixel_size: (0, 0),
         selection: None,
         selection_generation: 0,
         selection_mode: SelectionMode::Cell,
@@ -13916,6 +13930,20 @@ impl App {
         lock.recover_stream_locked()?;
         self.ensure_graphics_writer_healthy()?;
         self.painted_durable_notice_this_frame = None;
+        self.toy_rail.jobs.clear();
+        self.toy_header.jobs.clear();
+        if std::mem::take(&mut self.toy_sixel_repaint) {
+            // An area that showed a Sixel image is gone: repaint every cell
+            // so no stale picture stays behind.
+            terminal.clear()?;
+            self.toy_sixel_shown.clear();
+        }
+        if terminal.size().ok().map(|size| (size.width, size.height)) != Some(self.toy_sixel_size) {
+            // A resize repaints every cell, wiping the images.
+            self.toy_sixel_shown.clear();
+            self.toy_sixel_size =
+                terminal.size().map(|size| (size.width, size.height)).unwrap_or_default();
+        }
         catch_renderer_panic(|| {
             terminal.draw(|frame| {
                 self.prepare_frame_layout(frame.area(), action);
@@ -13923,8 +13951,38 @@ impl App {
                 if self.sidebar_toy_visible {
                     self.sidebar_toy_painted_at = Instant::now();
                 }
+                // Something drawn over a toy area (a menu, a prompt) wins:
+                // skip that image this frame.
+                let buf = frame.buffer_mut();
+                let clear = |rect: Rect| {
+                    (rect.y..rect.y + rect.height).all(|y| {
+                        (rect.x..rect.x + rect.width)
+                            .all(|x| buf.cell((x, y)).is_none_or(|cell| cell.symbol() == " "))
+                    })
+                };
+                self.toy_rail.jobs.retain(|job| clear(job.rect));
+                self.toy_header.jobs.retain(|job| clear(job.rect));
             })
         })??;
+        let rects: Vec<Rect> = self
+            .toy_rail
+            .jobs
+            .iter()
+            .chain(&self.toy_header.jobs)
+            .map(|job| job.rect)
+            .collect();
+        if self.toy_sixel_rects.iter().any(|rect| !rects.contains(rect)) {
+            self.toy_sixel_repaint = true;
+        }
+        self.toy_sixel_rects = rects;
+        let jobs: Vec<_> =
+            self.toy_rail.jobs.drain(..).chain(self.toy_header.jobs.drain(..)).collect();
+        let sixel = crate::ui::toy3d::emit(&jobs, &mut self.toy_sixel_shown);
+        if !sixel.is_empty() {
+            let mut stdout = std::io::stdout();
+            stdout.write_all(&sixel)?;
+            stdout.flush()?;
+        }
         self.sync_text_input_viewports();
         if self.graphics_host_scene_reset_pending {
             if let Some(writer) = &self.graphics_writer {
@@ -47307,6 +47365,10 @@ mod tests {
             toy_header: Default::default(),
             header_toy_strips: Vec::new(),
             toy_decks: HashSet::new(),
+            toy_sixel_rects: Vec::new(),
+            toy_sixel_repaint: false,
+        toy_sixel_shown: Vec::new(),
+        toy_sixel_size: (0, 0),
             selection: None,
             selection_generation: 0,
             selection_mode: SelectionMode::Cell,

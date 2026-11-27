@@ -16,6 +16,7 @@ mod sidebar;
 pub(crate) mod sizing;
 pub(crate) mod terminal_grid;
 pub(crate) mod toy;
+pub(crate) mod toy3d;
 
 use cmux_tui_core::Rect;
 use ratatui::Frame;
